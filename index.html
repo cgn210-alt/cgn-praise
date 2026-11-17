@@ -28,7 +28,7 @@
   html, body { margin: 0; }
   body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5; }
   button, input, select, textarea { font: inherit; color: inherit; }
-  button { cursor: pointer; }
+  button, .btn { cursor: pointer; white-space: nowrap; }
   .hidden { display: none !important; }
 
   header.top {
@@ -76,13 +76,16 @@
   .badge.parental, .badge.leave { background: #fef3c7; color: #92400e; }
   .badge.retired { background: #f1f1f1; color: #888; }
   .badge.type { background: #eef0fb; color: var(--navy2); }
+  .badge.title { background: #fff1d6; color: #8a5a00; }
+  .badge { white-space: nowrap; }
 
   /* 공지 */
   .notice { background: #fff8eb; border: 1px solid #f6dfb3; border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; white-space: pre-wrap; font-size: 14px; }
 
   /* 월 이동 */
-  .monthbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-  .monthbar .ym { font-size: 19px; font-weight: 900; min-width: 130px; text-align: center; }
+  .monthbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .monthbar .ym { font-size: 19px; font-weight: 900; min-width: 118px; text-align: center; white-space: nowrap; }
+  .dt { flex: none; width: 92px; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .monthbar .nav { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: #fff; font-size: 18px; }
 
   /* 예배 카드 */
@@ -111,7 +114,11 @@
   .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
   /* 명단 */
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 10px; }
+  @media (max-width: 480px) {
+    .tabs button { padding: 12px 9px; font-size: 14px; }
+    .grid { gap: 8px; }
+  }
   .mem { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 7px; text-align: center; cursor: pointer; }
   .mem:hover { border-color: #b7bfe4; }
   .mem .nm { font-weight: 700; margin-top: 6px; font-size: 14.5px; }
@@ -187,6 +194,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="praise.js?v=1"></script>
+<script src="praise.js?v=2"></script>
 </body>
 </html>

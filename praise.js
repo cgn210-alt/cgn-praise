@@ -19,6 +19,8 @@
   var STATUS = { active: '활동', guest: '객원', parental: '육아휴직', leave: '휴직', retired: '섬김종료' };
   var TYPES = { staff: '직원예배', prayer: '기도회', praise: '찬양예배', lecture: '특강', team: '팀 모임', etc: '기타' };
   var DEFAULTS = { pointStart: '2027-01-01', servePoint: 1, attendPoint: 1, minutes: { staff: 60, prayer: 60, praise: 60, lecture: 60, team: 60, etc: 60 } };
+  // 직임 입력 칸에서 고를 수 있는 이름 (직접 적어도 됩니다)
+  var TITLES = ['총괄', '총무', '보컬 파트장', '남성 보컬 파트장', '여성 보컬 파트장', '건반 파트장', '리듬 파트장', '음향 감독', '영상기술 파트장', '자막 파트장'];
   var DOW = '일월화수목금토';
   var R = 'praise/';
 
@@ -40,6 +42,8 @@
   function todayKey() { var d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
   function dowOf(key) { var p = key.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]).getDay(); }
   function shortDate(key) { return (+key.slice(5, 7)) + '/' + (+key.slice(8)) + '(' + DOW.charAt(dowOf(key)) + ')'; }
+  // 26.11.17(화) — 자릿수를 맞춰 세로로 가지런히
+  function fullDate(key) { return key.slice(2, 4) + '.' + key.slice(5, 7) + '.' + key.slice(8) + '(' + DOW.charAt(dowOf(key)) + ')'; }
   function addMonth(ym, n) {
     var y = +ym.slice(0, 4), m = +ym.slice(5) - 1 + n;
     y += Math.floor(m / 12); m = ((m % 12) + 12) % 12;
@@ -80,7 +84,8 @@
     var order = {}; PARTS.forEach(function (p, i) { order[p.key] = i; });
     return Object.keys(S.members).map(function (k) { return Object.assign({ id: k }, S.members[k]); })
       .sort(function (a, b) {
-        return (order[partOf(a.part).key] - order[partOf(b.part).key]) || ((a.order || 0) - (b.order || 0)) || (a.name < b.name ? -1 : 1);
+        return (order[partOf(a.part).key] - order[partOf(b.part).key]) || ((b.title ? 1 : 0) - (a.title ? 1 : 0)) ||
+          ((a.order || 0) - (b.order || 0)) || (a.name < b.name ? -1 : 1);
       });
   }
   function myId() {
@@ -371,6 +376,7 @@
     var extra = Object.keys(m.roles || {}).filter(function (k) { return m.roles[k]; }).map(slotLabel).join('·');
     return '<div class="mem' + (st !== 'active' && st !== 'guest' ? ' off' : '') + '" data-act="mem" data-id="' + m.id + '">' + photoBox(m.id) +
       '<div class="nm">' + esc(m.name) + '</div><div class="meta">' +
+      (m.title ? '<span class="badge title">' + esc(m.title) + '</span> ' : '') +
       (st !== 'active' ? '<span class="badge ' + st + '">' + STATUS[st] + '</span> ' : '') + (extra ? '+' + esc(extra) : '') + '</div></div>';
   }
 
@@ -489,7 +495,7 @@
     }
     var yr = tally(y + '-01-01', y + '-12-31')[id];
     var h = '<div class="card"><div class="row" style="align-items:flex-start;gap:14px"><div style="width:90px">' + photoBox(id) + '</div><div class="grow">' +
-      '<h2 style="margin:0">' + esc(m.name) + '</h2><div class="muted">' + partOf(m.part).label + ' · ' + STATUS[m.status || 'active'] + '</div>' +
+      '<h2 style="margin:0">' + esc(m.name) + '</h2><div class="muted">' + (m.title ? esc(m.title) + ' · ' : '') + partOf(m.part).label + ' · ' + STATUS[m.status || 'active'] + '</div>' +
       (yr ? '<p class="small" style="margin:8px 0 0">올해 ' + (yr.serve + yr.attend) + '번 예배의 자리를 함께 지켜 주셨습니다. 수고에 감사드립니다.</p>' : '') +
       '</div></div></div>';
     h += '<div class="tiles">' + box(+mo + '월', y + '-' + mo + '-01', y + '-' + mo + '-31') +
@@ -499,7 +505,7 @@
     var all = Object.keys(S.events).map(function (k) { return Object.assign({ id: k }, S.events[k]); }).filter(function (e) { return e.date; });
     var up = all.filter(function (e) { return e.date >= t && rolesIn(e, id).length; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; });
     h += '<div class="card"><b>앞으로 맡은 예배</b>' + (up.length ? up.map(function (e) {
-      return '<div class="row small" style="margin-top:6px"><b style="width:70px">' + shortDate(e.date) + '</b><span class="grow">' + esc(e.title || TYPES[e.type]) + '</span><span class="badge type">' + rolesIn(e, id).join('·') + '</span></div>';
+      return '<div class="row small" style="margin-top:6px"><b class="dt">' + fullDate(e.date) + '</b><span class="grow">' + esc(e.title || TYPES[e.type]) + '</span><span class="badge type">' + rolesIn(e, id).join('·') + '</span></div>';
     }).join('') : '<p class="small muted" style="margin:6px 0 0">등록된 담당이 없습니다.</p>') + '</div>';
 
     var aw = Object.keys(S.awards).filter(function (k) { return S.awards[k].winners && S.awards[k].winners[id]; }).sort().reverse();
@@ -509,7 +515,7 @@
       .filter(function (e) { return involvement(e, id); }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
     h += '<div class="card"><b>지난 섬김 기록</b> <span class="small muted">' + hist.length + '건</span>' + hist.slice(0, 40).map(function (e) {
       var kind = involvement(e, id);
-      return '<div class="row small" style="margin-top:6px"><span style="width:110px">' + e.date.slice(2, 4) + '.' + shortDate(e.date).replace('/', '.') + '</span><span class="grow">' + esc(e.title || TYPES[e.type]) + '</span><span class="muted">' + (kind === 'serve' ? rolesIn(e, id).join('·') : '출석') + '</span></div>';
+      return '<div class="row small" style="margin-top:6px"><span class="dt">' + fullDate(e.date) + '</span><span class="grow">' + esc(e.title || TYPES[e.type]) + '</span><span class="muted">' + (kind === 'serve' ? rolesIn(e, id).join('·') : '출석') + '</span></div>';
     }).join('') + (hist.length > 40 ? '<p class="small muted">최근 40건만 보입니다.</p>' : '') + '</div>';
     return h;
   }
@@ -682,7 +688,7 @@
     var extra = Object.keys(m.roles || {}).filter(function (k) { return m.roles[k]; }).map(slotLabel).join(', ');
     modal('<div class="row" style="align-items:flex-start;gap:14px;flex-wrap:nowrap"><div style="width:120px;flex:none">' + photoBox(id) + '</div><div class="grow">' +
       '<h3 style="margin:0">' + esc(m.name) + '</h3>' +
-      '<div style="margin-top:2px">' + partOf(m.part).label + ' <span class="badge ' + (m.status || 'active') + '">' + STATUS[m.status || 'active'] + '</span></div>' +
+      '<div style="margin-top:2px">' + (m.title ? '<b>' + esc(m.title) + '</b> · ' : '') + partOf(m.part).label + ' <span class="badge ' + (m.status || 'active') + '">' + STATUS[m.status || 'active'] + '</span></div>' +
       (extra ? '<div class="small" style="margin-top:4px">함께 맡는 자리: ' + esc(extra) + '</div>' : '') +
       (m.email ? '<div class="small muted" style="margin-top:4px">' + esc(m.email) + '</div>' : '') +
       (m.note ? '<div class="small" style="margin-top:6px;white-space:pre-wrap">' + esc(m.note) + '</div>' : '') +
@@ -705,6 +711,8 @@
       '<label class="btn sm">사진 올리기<input type="file" id="p-file" accept="image/*" class="hidden"></label> ' +
       '<button class="btn sm" id="p-del">사진 빼기</button><div class="small muted" style="margin-top:4px">증명사진 비율(3:4)로 맞춰 저장합니다.</div></div></div>' +
       '<label class="f">이름</label><input type="text" id="p-name" value="' + esc(m.name) + '">' +
+      '<label class="f">직임 <span style="font-weight:500">(비우면 표시 안 함)</span></label><input type="text" id="p-title" list="p-titles" value="' + esc(m.title || '') + '" placeholder="예: 총괄, 총무, 보컬 파트장">' +
+      '<datalist id="p-titles">' + TITLES.map(function (t) { return '<option value="' + t + '">'; }).join('') + '</datalist>' +
       '<label class="f">회사 메일 <span style="font-weight:500">(내 기록과 연결)</span></label><input type="email" id="p-email" value="' + esc(m.email || '') + '" placeholder="아이디' + ALLOWED_EMAIL_DOMAIN + '">' +
       '<div class="row"><div class="grow"><label class="f">파트</label><select id="p-part">' + PARTS.map(function (p) {
         return '<option value="' + p.key + '"' + (p.key === (m.part || '') ? ' selected' : '') + '>' + p.label + '</option>';
@@ -737,6 +745,7 @@
       var obj = { name: name, part: $('p-part').value, status: $('p-status').value, order: +$('p-order').value || 0 };
       var email = $('p-email').value.trim().toLowerCase();
       if (email) obj.email = email;
+      if ($('p-title').value.trim()) obj.title = $('p-title').value.trim();
       if ($('p-note').value.trim()) obj.note = $('p-note').value.trim();
       var rs = {};
       document.querySelectorAll('#modal [data-role]').forEach(function (x) { if (x.checked) rs[x.getAttribute('data-role')] = true; });
