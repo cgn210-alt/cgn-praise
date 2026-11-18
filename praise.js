@@ -1129,15 +1129,16 @@
   function printPanel() {
     var s = S.settings || {}, list = sortedMembers().filter(function (m) { return m.status !== 'retired'; });
     return '<div class="card"><b>맞춤 인쇄</b><p class="small muted" style="margin:4px 0 0">이름 · 역할 · 날짜를 채운 양식을 새 창에 엽니다. 새 창에서 글자를 눌러 더 고친 뒤 인쇄하면 됩니다(A4 세로, 배율 100%, 여백 없음, 머리글 · 바닥글 끄기).</p>' +
-      '<div class="row"><div class="grow"><label class="f">양식</label><select id="pr-type">' + Object.keys(FORMS).map(function (k) { return '<option value="' + k + '">' + FORMS[k] + '</option>'; }).join('') + '</select></div>' +
-      '<div class="grow"><label class="f">받는 사람</label><select id="pr-mem"><option value="">(빈칸으로)</option>' + list.map(function (m) {
+      // 좁은 화면에서도 칸이 밀리지 않게 두 칸씩 고른 격자로
+      '<div class="set-grid two"><div><label class="f">양식</label><select id="pr-type">' + Object.keys(FORMS).map(function (k) { return '<option value="' + k + '">' + FORMS[k] + '</option>'; }).join('') + '</select></div>' +
+      '<div><label class="f">받는 사람</label><select id="pr-mem"><option value="">(빈칸으로)</option>' + list.map(function (m) {
         return '<option value="' + m.id + '">' + esc(m.name) + ' · ' + partOf(m.part).label + '</option>';
       }).join('') + '</select></div></div>' +
-      '<div class="row"><div class="grow"><label class="f">섬김 부서 / 역할</label><input type="text" id="pr-role" placeholder="받는 사람을 고르면 파트가 들어갑니다"></div>' +
-      '<div class="grow"><label class="f">표창 부문 (표창장)</label><input type="text" id="pr-award" value="함께 완주상"></div></div>' +
-      '<div class="row"><div class="grow"><label class="f">날짜</label><input type="date" id="pr-date" value="' + todayKey() + '"></div>' +
-      '<div class="grow"><label class="f">수여기관</label><input type="text" id="pr-org" value="' + esc(s.printOrg || '') + '"></div>' +
-      '<div class="grow"><label class="f">대표 / 담당자</label><input type="text" id="pr-signer" value="' + esc(s.printSigner || '') + '"></div></div>' +
+      '<label class="f">섬김 부서 / 역할</label><input type="text" id="pr-role" placeholder="받는 사람을 고르면 파트가 들어갑니다">' +
+      '<label class="f">표창 부문 <span style="font-weight:500">(표창장에만 들어감)</span></label><input type="text" id="pr-award" value="함께 완주상">' +
+      '<label class="f">날짜</label><input type="date" id="pr-date" value="' + todayKey() + '">' +
+      '<div class="set-grid two"><div><label class="f">수여기관</label><input type="text" id="pr-org" value="' + esc(s.printOrg || '') + '" placeholder="예: CGN"></div>' +
+      '<div><label class="f">대표 / 담당자</label><input type="text" id="pr-signer" value="' + esc(s.printSigner || '') + '" placeholder="이름"></div></div>' +
       '<label class="small chk" style="margin-top:8px"><input type="checkbox" id="pr-log" checked> 지급 기록에 남기기</label>' +
       '<div class="foot" style="justify-content:flex-start"><button class="btn pri" data-act="print-open">인쇄 화면 열기</button></div></div>';
   }
