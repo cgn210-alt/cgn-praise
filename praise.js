@@ -809,7 +809,7 @@
     years[todayKey().slice(0, 4)] = 1; years[cfg().pointStart.slice(0, 4)] = 1; years[y] = 1;
     Object.keys(S.badges).forEach(function (id) { yearsOf(S.badges[id]).forEach(function (yy) { years[yy] = 1; }); });
     var h = '<div class="card hero"><div class="row" style="flex-wrap:nowrap;gap:14px"><img src="em1-logo.png" alt="EM1" class="hero-logo">' +
-      '<div class="grow"><b>함께 자라는 예배자</b><div class="small muted">약속한 섬김의 꾸준함을 함께 기억하고 축하합니다. 배지는 신앙의 수준을 판정하는 표지가 아닙니다.</div></div></div>' +
+      '<div class="grow"><b>함께 성장하는 예배자</b><div class="small muted">약속한 섬김의 꾸준함을 함께 기억하고 축하합니다. 배지는 신앙의 수준을 판정하는 표지가 아닙니다.</div></div></div>' +
       '<div class="row" style="margin-top:10px"><select id="b-year" style="width:auto">' + Object.keys(years).sort().map(function (yy) {
         return '<option' + (yy === y ? ' selected' : '') + '>' + yy + '</option>';
       }).join('') + '</select><a class="btn sm" href="guide.html">배지 안내 보기</a><span class="grow"></span>' +
