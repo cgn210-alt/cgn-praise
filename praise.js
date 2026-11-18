@@ -427,6 +427,7 @@
     history.replaceState({ tab: S.tab }, '');
     window.addEventListener('popstate', function (ev) {
       if (skipPop) { skipPop = false; return; }
+      if ($('sel-sheet')) { closeSheet(true); return; }
       if ($('modal') || $('modal2')) { closeModal('modal2', true); closeModal('modal', true); return; }
       var st = ev.state || {};
       if (st.tab && st.tab !== S.tab) {
@@ -1112,6 +1113,79 @@
   }
 
   // ---------- 모달 ----------
+  // ---------- 고르기 칸 ----------
+  // 브라우저 기본 드롭다운은 디자인을 바꿀 수 없고 휴대폰에서 글자가 잘려서,
+  // 모든 <select> 를 앱 모양의 버튼으로 덮고 누르면 선택 창(휴대폰은 아래에서 올라옴)을 엽니다.
+  // 값은 원래 <select> 에 그대로 들어가므로 저장 · change 처리는 바뀌지 않습니다.
+  function selText(sel) { var o = sel.options[sel.selectedIndex]; return o ? o.text : ''; }
+  function selTitle(sel) {
+    if (sel.getAttribute('data-sheet-title')) return sel.getAttribute('data-sheet-title');
+    var lb = sel.previousElementSibling;
+    if (lb && lb.tagName === 'LABEL') return lb.firstChild ? String(lb.firstChild.textContent).trim() : '';
+    if (sel.hasAttribute('data-add')) return slotLabel(sel.getAttribute('data-add')) + ' 담당 추가';
+    if (sel.hasAttribute('data-tier')) return nameOf(sel.getAttribute('data-tier')) + ' 님 배지';
+    if (sel.hasAttribute('data-st')) return nameOf(sel.getAttribute('data-st')) + ' 님';
+    if (sel.hasAttribute('data-role-of')) return '지기 지정';
+    return '고르기';
+  }
+  function enhanceSelects() {
+    document.querySelectorAll('select:not([data-enh])').forEach(function (sel) {
+      sel.setAttribute('data-enh', '1');
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'sel-btn';
+      b.style.cssText = sel.style.cssText;
+      b.innerHTML = '<span class="v"></span>';
+      b.firstChild.textContent = selText(sel);
+      sel.style.display = 'none';
+      sel.parentNode.insertBefore(b, sel.nextSibling);
+      sel._btn = b;
+      b.onclick = function (ev) { ev.preventDefault(); ev.stopPropagation(); openSheet(sel); };
+      sel.addEventListener('change', function () { b.firstChild.textContent = selText(sel); });
+    });
+  }
+  function openSheet(sel) {
+    closeSheet(true);
+    var h = '<div class="sel-sheet"><div class="sel-title">' + esc(selTitle(sel)) + '</div>';
+    Array.prototype.forEach.call(sel.children, function (c) {
+      if (c.tagName === 'OPTGROUP') {
+        h += '<div class="sel-grp">' + esc(c.label) + '</div>';
+        Array.prototype.forEach.call(c.children, function (o) { h += optBtn(o); });
+      } else h += optBtn(c);
+    });
+    function optBtn(o) {
+      var idx = Array.prototype.indexOf.call(sel.options, o);
+      if (o.value === '' && /^\+/.test(o.text)) return '';   // '+ 추가' 같은 안내 항목은 선택 창에 넣지 않음
+      return '<button type="button" class="sel-opt' + (idx === sel.selectedIndex ? ' on' : '') + (o.value === '' && /\+/.test(o.text) ? ' hint' : '') + '"' +
+        (o.disabled ? ' disabled' : '') + ' data-i="' + idx + '">' + esc(o.text) + '</button>';
+    }
+    var bg = document.createElement('div');
+    bg.className = 'sel-bg'; bg.id = 'sel-sheet';
+    bg.innerHTML = h + '</div>';
+    document.body.appendChild(bg);
+    history.pushState(Object.assign({}, history.state || {}, { sheet: true }), '');
+    bg.onclick = function (ev) {
+      var o = ev.target.closest('.sel-opt');
+      if (ev.target === bg) { closeSheet(); return; }
+      if (!o || o.disabled) return;
+      var i = +o.getAttribute('data-i');
+      closeSheet();
+      if (i !== sel.selectedIndex) {
+        sel.selectedIndex = i;
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    };
+    var on = bg.querySelector('.sel-opt.on');
+    if (on) on.scrollIntoView({ block: 'center' });
+  }
+  function closeSheet(silent) {
+    var s = $('sel-sheet');
+    if (!s) return;
+    s.remove();
+    if (!silent && history.state && history.state.sheet) { skipPop = true; history.back(); }
+  }
+  new MutationObserver(function () { enhanceSelects(); }).observe(document.body, { childList: true, subtree: true });
+
   // 탭 옮기기 (뒤로가기 기록을 남김)
   var skipPop = false;
   function goTab(tab) {
@@ -1316,10 +1390,10 @@
       // 브라우저 기본 목록 대신 앱 모양의 고르기 버튼
       '<div class="tchips" id="p-tchips">' + [''].concat(TITLES).map(function (t) { return '<button type="button" class="tchip" data-title="' + esc(t) + '">' + (t ? esc(t) : '없음') + '</button>'; }).join('') + '</div>' +
       '<label class="f">회사 메일 <span style="font-weight:500">(내 기록과 연결)</span></label><input type="email" id="p-email" value="' + esc(m.email || '') + '" placeholder="아이디' + ALLOWED_EMAIL_DOMAIN + '">' +
-      '<div class="row"><div class="grow"><label class="f">파트</label><select id="p-part">' + PARTS.map(function (p) {
+      '<label class="f">파트</label><select id="p-part">' + PARTS.map(function (p) {
         return '<option value="' + p.key + '"' + (p.key === (m.part || '') ? ' selected' : '') + '>' + p.label + '</option>';
-      }).join('') + '</select></div>' +
-      '<div class="grow"><label class="f">상태</label><select id="p-status">' + Object.keys(STATUS).map(function (k) {
+      }).join('') + '</select>' +
+      '<div class="row"><div class="grow"><label class="f">상태</label><select id="p-status">' + Object.keys(STATUS).map(function (k) {
         return '<option value="' + k + '"' + (k === (m.status || 'active') ? ' selected' : '') + '>' + STATUS[k] + '</option>';
       }).join('') + '</select></div>' +
       '<div style="width:80px"><label class="f">순서</label><input type="number" id="p-order" value="' + (m.order || 0) + '"></div></div>' +

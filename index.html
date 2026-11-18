@@ -239,6 +239,24 @@
 
   .copyright { max-width: 960px; margin: 0 auto; padding: 0 16px 28px; text-align: center; font-size: 11.5px; color: #8a8f9c; line-height: 1.6; }
 
+  /* 앱 모양의 고르기 칸과 선택 창 */
+  .sel-btn { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 38px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: #fff; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+  .sel-btn:hover { border-color: var(--gold); }
+  .sel-btn .v { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .sel-btn:after { content: ''; flex: none; width: 7px; height: 7px; border-right: 2px solid var(--gold-d); border-bottom: 2px solid var(--gold-d); transform: rotate(45deg); margin: -4px 2px 0 0; }
+  .sel-bg { position: fixed; inset: 0; background: rgba(12,29,48,0.45); z-index: 90; display: flex; align-items: flex-end; justify-content: center; }
+  .sel-sheet { background: var(--card); width: 100%; max-width: 440px; max-height: 72vh; overflow-y: auto; border-radius: 18px 18px 0 0; padding: 6px 0 16px; box-shadow: 0 -8px 30px rgba(12,29,48,0.2); }
+  .sel-sheet:before { content: ''; display: block; width: 40px; height: 4px; border-radius: 4px; background: #e2d3b4; margin: 4px auto 6px; }
+  .sel-title { font-weight: 900; color: var(--navy); padding: 6px 20px 10px; font-size: 15.5px; }
+  .sel-grp { position: sticky; top: 0; background: var(--gold-l); color: #84591f; font-size: 12.5px; font-weight: 700; padding: 5px 20px; }
+  .sel-opt { display: flex; align-items: center; justify-content: space-between; width: 100%; border: 0; border-bottom: 1px solid #f3ece0; background: none; padding: 13px 20px; font: inherit; font-size: 15px; text-align: left; color: var(--text); cursor: pointer; }
+  .sel-opt:hover { background: #fbf6ec; }
+  .sel-opt.on { color: var(--navy); font-weight: 700; background: #fbf3e3; }
+  .sel-opt.on:after { content: '✓'; color: var(--gold-d); font-weight: 900; }
+  .sel-opt.hint { color: var(--muted); }
+  .sel-opt:disabled { color: #b8b8b8; cursor: default; }
+  @media (min-width: 600px) { .sel-bg { align-items: center; } .sel-sheet { border-radius: 16px; } .sel-sheet:before { display: none; } }
+
   /* 모달 */
   .modal-bg { position: fixed; inset: 0; background: rgba(12,29,48,0.5); z-index: 50; display: flex; align-items: flex-start; justify-content: center; padding: 30px 12px; overflow-y: auto; }
   .modal { background: var(--card); border-radius: 16px; width: 100%; max-width: 520px; padding: 18px; }
@@ -288,6 +306,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="praise.js?v=25"></script>
+<script src="praise.js?v=27"></script>
 </body>
 </html>
