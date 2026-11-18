@@ -1014,9 +1014,22 @@
       }
       return o.rate * 100 >= YEAR_RATE;
     }
-    modal('<h3>누적 · 연말 배지</h3>' + yearStep(y, 'ey') +
-      '<p class="small muted">누적 배지는 그해 실제 섬김(승인 제외 미포함) 30 · 60 · 100회, 연말 완주는 네 분기 배지와 연간 참여율 ' + YEAR_RATE + '% 이상, 모든 분기 70% 이상입니다. 기준을 채운 칸은 금색 테두리로 표시합니다. 눌러서 고르면 남색이 됩니다.</p>' +
-      (ids.length ? '<div class="q-list">' +
+    // 기준을 채운 사람 수 요약
+    var okN = { M030: 0, M060: 0, M100: 0, YEAR: 0 }, given = 0;
+    ids.forEach(function (id) {
+      var o = ev[id] || { a: 0 }, bs = S.badges[id] || {};
+      MILES.forEach(function (mi) { if (o.a >= mi[1]) okN[mi[0]]++; });
+      if (yearOk(id)) okN.YEAR++;
+      MILES.concat([['YEAR']]).forEach(function (mi) { if (bs[y + '-' + mi[0]]) given++; });
+    });
+    // 휴대폰에서는 화면 전체를 쓰는 창: 위(해 · 요약) · 가운데(목록) · 아래(격려의 말 · 저장)를 고정
+    modal('<div class="fs-head"><div class="row" style="flex-wrap:nowrap"><h3 style="margin:0" class="grow">누적 · 연말 배지</h3><button class="fs-x" id="ey-x" aria-label="닫기">✕</button></div>' +
+      '<div class="q-pick">' + yearStep(y, 'ey') + '</div>' +
+      '<div class="q-sum"><span>기준 충족</span>' + MILES.map(function (mi) { return '<b>' + mi[1] + '회 ' + okN[mi[0]] + '</b>'; }).join('') +
+      '<b>완주 ' + okN.YEAR + '</b>' + (given ? '<em>수여됨 ' + given + '</em>' : '') + '</div></div>' +
+      '<div class="fs-body">' +
+      '<details class="q-rule"><summary>기준 보기</summary>누적 배지는 그해 실제 섬김(승인 제외 미포함) 30 · 60 · 100회, 연말 완주는 네 분기 배지와 연간 참여율 ' + YEAR_RATE + '% 이상, 모든 분기 70% 이상입니다. 기준을 채운 버튼은 금색 테두리로 표시되고, 눌러서 고르면 남색이 됩니다.</details>' +
+      (ids.length ? '<div class="q-list flat">' +
         ids.map(function (id) {
           var o = ev[id] || { a: 0, d: 0, rate: 0 }, bs = S.badges[id] || {};
           function chip(code, label, ok) {
@@ -1024,16 +1037,27 @@
             return '<label class="mchip' + (ok ? ' ok' : '') + (on ? ' on' : '') + '"><input type="checkbox" data-ms="' + id + '|' + code + '"' + (on ? ' checked' : '') + '>' + label + '</label>';
           }
           return partRow(id) + '<div class="q-row"><div class="q-who"><b>' + esc(nameOf(id)) + '</b>' +
-            '<div class="q-nums">실제 섬김 ' + o.a + '회 · 연간 <b>' + (o.d ? pct(o.rate) : '-') + '</b></div></div><div class="mchips">' +
+            '<div class="q-nums">섬김 ' + o.a + '회 · 연간 <b>' + (o.d ? pct(o.rate) : '-') + '</b></div></div><div class="mchips">' +
             MILES.map(function (mi) { return chip(mi[0], mi[1], o.a >= mi[1]); }).join('') + chip('YEAR', '완주', yearOk(id)) + '</div></div>';
-        }).join('') + '</div>' : '<p class="muted small">이 해에 섬김 기록이 없습니다.</p>') +
-      '<label class="f">격려의 말</label><textarea id="ey-note" placeholder="예: 한 해 동안 함께 걸어 주셔서 감사합니다."></textarea>' +
-      '<div class="foot"><button class="btn" id="ey-close">닫기</button><button class="btn gold" id="ey-save">저장</button></div>');
+        }).join('') + '</div>' : '<p class="muted small">이 해에 섬김 기록이 없습니다.</p>') + '</div>' +
+      '<div class="fs-foot"><textarea id="ey-note" rows="2" placeholder="격려의 말 (선택) · 예: 한 해 동안 함께 걸어 주셔서 감사합니다."></textarea>' +
+      '<div class="row" style="flex-wrap:nowrap;margin-top:8px"><span class="small muted grow" id="ey-count">바뀐 배지 없음</span><button class="btn" id="ey-close">닫기</button><button class="btn gold" id="ey-save">저장</button></div></div>',
+      'modal', 'full');
     bindYearStep(y, 'ey', function (ny) { evalYearModal(ny); });
+    // 바꾼 배지 수를 아래에 바로 보여 줌
+    function countChanges() {
+      var n = 0;
+      document.querySelectorAll('#modal [data-ms]').forEach(function (x) {
+        var pp = x.getAttribute('data-ms').split('|'), has = !!(S.badges[pp[0]] && S.badges[pp[0]][y + '-' + pp[1]]);
+        if (has !== x.checked) n++;
+      });
+      $('ey-count').textContent = n ? '바뀐 배지 ' + n + '개' : '바뀐 배지 없음';
+      $('ey-count').classList.toggle('muted', !n);
+    }
     document.querySelectorAll('#modal .mchip input').forEach(function (x) {
-      x.onchange = function () { x.parentNode.classList.toggle('on', x.checked); };
+      x.onchange = function () { x.parentNode.classList.toggle('on', x.checked); countChanges(); };
     });
-    $('ey-close').onclick = function () { closeModal(); };
+    $('ey-close').onclick = $('ey-x').onclick = function () { closeModal(); };
     $('ey-save').onclick = function () {
       var up = {}, n = 0, note = $('ey-note').value.trim(), by = myName();
       document.querySelectorAll('#modal [data-ms]').forEach(function (x) {
