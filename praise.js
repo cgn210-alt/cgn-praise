@@ -41,7 +41,7 @@
   var PERSON = '<svg class="ph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="4.2"/><path d="M3.5 22c0-4.7 3.8-8 8.5-8s8.5 3.3 8.5 8z"/></svg>';
   var R = 'praise/';
 
-  // AM1 배지 (guide.html 과 같은 기준). 분기 참여율 = 실제 수행 A / 약속한 일정 D
+  // EM1 배지 (guide.html 과 같은 기준). 분기 참여율 = 실제 수행 A / 약속한 일정 D
   var TIERS = [['BLOOM', '결실', 95], ['GROW', '자람', 85], ['BEGIN', '동행', 70]];
   var TIER_LABEL = { BEGIN: '동행', GROW: '자람', BLOOM: '결실', CARD: '감사 카드' };
   var QBADGE = {
@@ -56,13 +56,13 @@
   // 인쇄 양식 (print.html) 과 문서함 (docs 폴더)
   var FORMS = { appreciation: '감사장', letter: '감사 손편지', commendation: '감사표창장' };
   var DOCS = [
-    ['AM1-01-appreciation.pdf', '감사장', 'A4 세로 · 손글씨용'],
-    ['AM1-02-personal-letter.pdf', '감사 손편지', 'A4 세로 · 손글씨 네 줄'],
-    ['AM1-03-commendation.pdf', '감사표창장', 'A4 세로 · 연말 완주'],
-    ['AM1-print-set-A4.pdf', '감사 인쇄물 세 장 묶음', '감사장 · 손편지 · 표창장'],
-    ['AM1-evaluation-award-forms-A4.pdf', '분기 돌아보기 · 연말 수여 기록 양식', 'A4 가로 2쪽'],
-    ['AM1-detailed-infographic-A4.pdf', '상세 안내 인포그래픽', 'A4 가로 8쪽'],
-    ['AM1-overview-poster-A3.pdf', '요약 포스터', 'A3 세로']
+    ['EM1-01-appreciation.pdf', '감사장', 'A4 세로 · 손글씨용'],
+    ['EM1-02-personal-letter.pdf', '감사 손편지', 'A4 세로 · 손글씨 네 줄'],
+    ['EM1-03-commendation.pdf', '감사표창장', 'A4 세로 · 연말 완주'],
+    ['EM1-print-set-A4.pdf', '감사 인쇄물 세 장 묶음', '감사장 · 손편지 · 표창장'],
+    ['AM1-evaluation-award-forms-A4.pdf', '분기 돌아보기 · 연말 수여 기록 양식', 'A4 가로 2쪽 · 예전 로고'],
+    ['AM1-detailed-infographic-A4.pdf', '상세 안내 인포그래픽', 'A4 가로 8쪽 · 예전 로고'],
+    ['AM1-overview-poster-A3.pdf', '요약 포스터', 'A3 세로 · 예전 로고']
   ];
 
   var S = {
@@ -708,7 +708,7 @@
     var y = S.bYear, years = {}, me = myId();
     years[todayKey().slice(0, 4)] = 1; years[cfg().pointStart.slice(0, 4)] = 1; years[y] = 1;
     Object.keys(S.badges).forEach(function (id) { yearsOf(S.badges[id]).forEach(function (yy) { years[yy] = 1; }); });
-    var h = '<div class="card hero"><div class="row" style="flex-wrap:nowrap;gap:14px"><img src="amone-logo.png" alt="AM1" class="hero-logo">' +
+    var h = '<div class="card hero"><div class="row" style="flex-wrap:nowrap;gap:14px"><img src="em1-logo.png" alt="EM1" class="hero-logo">' +
       '<div class="grow"><b>함께 자라는 예배자</b><div class="small muted">약속한 섬김의 꾸준함을 함께 기억하고 축하합니다. 배지는 신앙의 수준을 판정하는 표지가 아닙니다.</div></div></div>' +
       '<div class="row" style="margin-top:10px"><select id="b-year" style="width:auto">' + Object.keys(years).sort().map(function (yy) {
         return '<option' + (yy === y ? ' selected' : '') + '>' + yy + '</option>';
