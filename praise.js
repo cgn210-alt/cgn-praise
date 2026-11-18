@@ -770,7 +770,59 @@
       });
       if (!add && !del) { toast('바뀐 것이 없습니다.'); return; }
       if (!confirm(y + '년 ' + q + '분기: 새로 수여 ' + add + '명' + (del ? ', 수여 취소 ' + del + '명' : '') + '\n저장할까요?')) return;
-      db.ref(R.slice(0, -1)).update(up).then(function () { closeModal(); toast('배지를 저장했습니다.'); }).catch(fail);
+      db.ref(R.slice(0, -1)).update(up).then(function () { closeModal(); showBoard(y); }).catch(fail);
+    };
+  }
+
+  // 수여한 해의 배지 수집판으로 이동
+  function showBoard(y) {
+    S.tab = 'badges'; S.bYear = String(y);
+    try { localStorage.setItem('praise-tab', S.tab); } catch (e) {}
+    render(true);
+    var b = document.querySelector('#main .board');
+    if (b) b.previousElementSibling.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    toast(y + '년 배지 수집판에 표시했습니다.');
+  }
+
+  // 관리자: 한 사람에게 배지 하나 주기 (명단에서 사람을 눌러 '배지 주기')
+  function grantOneModal(id, y, kind) {
+    y = y || lastQuarter()[0];
+    kind = kind || 'Q' + (y === lastQuarter()[0] ? lastQuarter()[1] : 1);
+    var key = y + '-' + kind, cur = (S.badges[id] || {})[key], isQ = kind.charAt(0) === 'Q';
+    var o = isQ ? (evalQuarter(y, +kind.slice(1))[id] || { assigned: 0, excused: 0, a: 0, d: 0, tier: '' }) : null;
+    var yr = !isQ ? (evalYear(y)[id] || { a: 0 }) : null;
+    var kinds = [['Q1', '1분기'], ['Q2', '2분기'], ['Q3', '3분기'], ['Q4', '4분기']].concat(MILES.map(function (mi) { return [mi[0], '누적 ' + mi[1] + '회 기념']; }), [['YEAR', '한 해 함께 완주']]);
+    var tierVal = cur ? cur.code : (o && o.tier) || 'BEGIN';
+    modal('<h3>' + esc(nameOf(id)) + ' 님 배지 주기</h3>' +
+      '<div class="row"><select id="g1-y" style="width:auto">' + yearChoices(y).map(function (v) { return '<option' + (v === y ? ' selected' : '') + '>' + v + '</option>'; }).join('') + '</select>' +
+      '<select id="g1-k" style="width:auto">' + kinds.map(function (k) { return '<option value="' + k[0] + '"' + (k[0] === kind ? ' selected' : '') + '>' + k[1] + '</option>'; }).join('') + '</select>' +
+      (isQ ? '<select id="g1-t" style="width:auto">' + [['BEGIN', '동행'], ['GROW', '자람'], ['BLOOM', '결실'], ['CARD', '감사 카드']].map(function (op) {
+        return '<option value="' + op[0] + '"' + (op[0] === tierVal ? ' selected' : '') + '>' + op[1] + (o && op[0] === o.tier ? ' (제안)' : '') + '</option>';
+      }).join('') + '</select>' : '') + '</div>' +
+      '<div class="row" style="margin-top:10px;gap:12px;flex-wrap:nowrap"><span id="g1-prev"></span><div class="small">' +
+      (isQ ? '배정 ' + o.assigned + '회 · 승인 제외 ' + o.excused + '회 · 평가대상 D ' + o.d + '회 · 실제 수행 A ' + o.a + '회' + (o.d ? ' · 참여율 ' + pct(o.a / o.d) : '') +
+        (o.d && o.d < MIN_SAMPLE ? '<br>D가 ' + MIN_SAMPLE + '회 미만이라 운영안은 감사 카드를 권합니다.' : '')
+        : y + '년 실제 섬김 ' + yr.a + '회') +
+      (cur ? '<br><b style="color:var(--gold-d)">이미 수여됨: ' + esc(badgeInfo(key, cur).title) + '</b>' : '') + '</div></div>' +
+      '<label class="f">격려의 말 (수여 소식에 함께 보입니다)</label><textarea id="g1-note">' + esc(cur && cur.note || '') + '</textarea>' +
+      '<div class="foot">' + (cur ? '<button class="btn bad" id="g1-del">수여 취소</button><span class="grow"></span>' : '') +
+      '<button class="btn" id="g1-close">닫기</button><button class="btn gold" id="g1-save">' + (cur ? '바꾸기' : '배지 주기') + '</button></div>');
+    function code() { return isQ ? $('g1-t').value : kind; }
+    function preview() { $('g1-prev').innerHTML = badgeImg(key, { code: code() }, 64); }
+    preview();
+    if (isQ) $('g1-t').onchange = preview;
+    $('g1-y').onchange = function () { grantOneModal(id, $('g1-y').value, $('g1-k').value); };
+    $('g1-k').onchange = function () { grantOneModal(id, $('g1-y').value, $('g1-k').value); };
+    $('g1-close').onclick = function () { closeModal(); };
+    $('g1-save').onclick = function () {
+      var rec = { code: code(), a: isQ ? o.a : yr.a, at: Date.now(), by: myName() };
+      if (isQ) rec.d = o.d;
+      if ($('g1-note').value.trim()) rec.note = $('g1-note').value.trim();
+      db.ref(R + 'badges/' + id + '/' + key).set(rec).then(function () { closeModal(); showBoard(y); }).catch(fail);
+    };
+    if (cur) $('g1-del').onclick = function () {
+      if (!confirm(nameOf(id) + ' 님의 ' + badgeInfo(key, cur).title + ' 수여를 취소할까요?')) return;
+      db.ref(R + 'badges/' + id + '/' + key).remove().then(function () { closeModal(); toast('수여를 취소했습니다.'); }).catch(fail);
     };
   }
 
@@ -820,7 +872,7 @@
         if (!x.checked && has) { up['badges/' + p[0] + '/' + k] = null; n++; }
       });
       if (!n) { toast('바뀐 것이 없습니다.'); return; }
-      db.ref(R.slice(0, -1)).update(up).then(function () { closeModal(); toast('저장했습니다.'); }).catch(fail);
+      db.ref(R.slice(0, -1)).update(up).then(function () { closeModal(); showBoard(y); }).catch(fail);
     };
   }
 
@@ -1062,9 +1114,12 @@
       '<div class="tiles" style="margin-top:14px">' +
       '<div class="tile"><div class="k">' + y + '년</div><div class="v">' + (ty.serve + ty.attend) + ' <small>회</small></div><div class="small muted">' + hm(ty.minutes) + (y + '-12-31' >= c.pointStart ? ' · ' + ty.points + '점' : '') + '</div></div>' +
       '<div class="tile"><div class="k">누적</div><div class="v">' + (al.serve + al.attend) + ' <small>회</small></div><div class="small muted">' + hm(al.minutes) + '</div></div></div>' +
-      '<div class="foot">' + (S.admin ? '<button class="btn" id="m-edit">편집</button>' : '') + '<button class="btn pri" id="m-close">닫기</button></div>');
+      '<div class="foot">' + (S.admin ? '<button class="btn gold" id="m-badge">배지 주기</button><button class="btn" id="m-edit">편집</button>' : '') + '<button class="btn pri" id="m-close">닫기</button></div>');
     $('m-close').onclick = function () { closeModal(); };
-    if (S.admin) $('m-edit').onclick = function () { editMember(id); };
+    if (S.admin) {
+      $('m-edit').onclick = function () { editMember(id); };
+      $('m-badge').onclick = function () { grantOneModal(id); };
+    }
   }
 
   function editMember(id) {
