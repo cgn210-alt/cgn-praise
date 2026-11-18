@@ -74,5 +74,12 @@
 ## 총괄지기 바꾸기
 `firebase-config.js` 의 `MASTER_EMAIL`, `MASTER_NAME` 과 `database.rules.json` 의 `cgn210@cgnmail.net` 을 함께 고친 뒤 규칙을 다시 게시합니다.
 
+## 저작권
+
+© 2026 EM1 · CGN 찬양팀. 이 앱의 화면 구성, 로고, 배지, 안내 · 인쇄 자료는 허락 없이 복제 · 배포 · 사용할 수 없습니다.
+
+- 앱 아래쪽과 `guide.html` 아래쪽에도 같은 문구가 있습니다.
+- 이 저장소는 GitHub Pages 배포를 위해 공개되어 있지만, 공개가 사용 허락을 뜻하지는 않습니다.
+
 ## 썸네일
 `praise-og-source.html` 을 1200x630 으로 캡처해 `praise-og.png` 로 저장합니다. 바꾸면 `index.html` 의 `og:image` 주소 끝 `?v=` 숫자를 올립니다.
