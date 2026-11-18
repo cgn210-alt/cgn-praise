@@ -40,6 +40,13 @@
   // 사진이 없을 때 보이는 사람 모양 (이름 글자와 겹치지 않게)
   var PERSON = '<svg class="ph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="4.2"/><path d="M3.5 22c0-4.7 3.8-8 8.5-8s8.5 3.3 8.5 8z"/></svg>';
   var R = 'praise/';
+  // 관리자(지기) 단계: 총괄지기는 firebase-config.js 의 MASTER_EMAIL, 나머지는 총괄지기가 관리 탭에서 지정
+  var ROLES = {
+    master: ['총괄지기', '최고 관리자', '모든 권한과 지기 지정'],
+    ops: ['운영지기', '총무', '명단 · 사진, 배지 · 감사 인사, 문서 · 인쇄, 기준 · 자료, 예배 담당 · 출석 · 공지'],
+    team: ['팀지기', '운영자', '예배 담당 · 출석 체크 · 공지']
+  };
+  function roleLabel(r) { return ROLES[r] ? ROLES[r][0] + '(' + ROLES[r][1] + ')' : ''; }
 
   // EM1 배지 (guide.html 과 같은 기준). 분기 참여율 = 실제 수행 A / 약속한 일정 D
   var TIERS = [['BLOOM', '결실', 95], ['GROW', '자람', 85], ['BEGIN', '동행', 70]];
@@ -260,7 +267,7 @@
   // 다른 사람에게 보여도 되는 배지 (본인이 원하지 않으면 관리자가 '배지 비공개'로 바꿉니다)
   function visibleBadges(id) {
     var m = S.members[id];
-    if (m && m.hideBadges && !S.admin && id !== myId()) return {};
+    if (m && m.hideBadges && !S.ops && id !== myId()) return {};
     return S.badges[id] || {};
   }
   function yearsOf(bs) {
@@ -275,7 +282,7 @@
     function wrap(k, inner) { return '<span class="bhit" data-act="badge" data-id="' + id + '|' + k + '">' + inner + '</span>'; }
     [1, 2, 3, 4].forEach(function (q) {
       var k = y + '-Q' + q, slot = '<span class="slot" style="width:' + size + 'px;height:' + size + 'px">' + q + '분기</span>';
-      h += bs[k] ? wrap(k, badgeImg(k, bs[k], size)) : S.admin ? '<span class="bhit" data-act="slot" data-id="' + id + '|' + k + '" title="배지 주기">' + slot + '</span>' : slot;
+      h += bs[k] ? wrap(k, badgeImg(k, bs[k], size)) : S.ops ? '<span class="bhit" data-act="slot" data-id="' + id + '|' + k + '" title="배지 주기">' + slot + '</span>' : slot;
     });
     h += '<span class="sep"></span>';
     MILES.concat([['YEAR']]).forEach(function (mi) {
@@ -390,7 +397,7 @@
     }
     S.master = email === MASTER_EMAIL.toLowerCase();
     db.ref(R + 'users/' + u.uid).set({ email: email, name: u.displayName || '', at: Date.now() }).catch(function () {});
-    $('who').innerHTML = esc(u.displayName || email) + '<br><button id="logout">로그아웃</button>';
+    $('who').innerHTML = esc(u.displayName || email) + ' <span class="role" id="who-role"></span><br><button id="logout">로그아웃</button>';
     $('who').classList.remove('hidden');
     $('logout').onclick = function () { auth.signOut(); location.reload(); };
     $('tabs').classList.remove('hidden');
@@ -416,7 +423,13 @@
     ['members', 'events', 'photos', 'awards', 'users', 'admins', 'settings', 'badges', 'cheers', 'issues'].forEach(function (k) {
       db.ref(R + k).on('value', function (snap) {
         S[k] = snap.val() || {};
-        if (k === 'admins') S.admin = S.master || !!S.admins[u.uid];
+        if (k === 'admins') {
+          var a = S.admins[u.uid];
+          S.role = S.master ? 'master' : a ? (a.role === 'team' ? 'team' : 'ops') : null;
+          S.admin = !!S.role;                        // 예배 담당 · 출석 · 공지
+          S.ops = S.role === 'master' || S.role === 'ops';   // 관리 탭과 그 밖의 편집
+          $('who-role').textContent = S.role ? ROLES[S.role][0] : '';
+        }
         later();
       }, denied);
     });
@@ -434,8 +447,8 @@
     var main = $('main'), act = document.activeElement;
     // 관리 탭에서 입력 중이면 다른 사람 변경으로 입력값이 지워지지 않게 기다립니다
     if (!force && (S.tab === 'admin' || S.tab === 'badges') && act && main.contains(act) && /INPUT|SELECT|TEXTAREA/.test(act.tagName)) return;
-    if (S.tab === 'admin' && !S.admin) S.tab = 'sched';
-    $('tab-admin').classList.toggle('hidden', !S.admin);
+    if (S.tab === 'admin' && !S.ops) S.tab = 'sched';
+    $('tab-admin').classList.toggle('hidden', !S.ops);
     $('tabs').querySelectorAll('[data-tab]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === S.tab); });
     var focusId = act && act.id, sel = focusId === 'q' ? act.selectionStart : null;
     var view = { sched: renderSched, roster: renderRoster, stats: renderStats, badges: renderBadges, mine: renderMine, admin: renderAdmin }[S.tab] || renderSched;
@@ -495,13 +508,13 @@
       '<span class="muted small">활동 ' + cnt.active + ' · 객원 ' + cnt.guest + ' · 육아휴직 ' + cnt.parental + ' · 휴직 ' + cnt.leave + (cnt.retired ? ' · 섬김종료 ' + cnt.retired : '') + '</span></div>' +
       '<div class="row" style="margin-top:8px"><input type="text" id="q" placeholder="이름 찾기" value="' + esc(S.q) + '" style="max-width:200px">' +
       '<label class="small"><input type="checkbox" id="show-retired"' + (S.showRetired ? ' checked' : '') + '> 섬김종료 포함</label>' +
-      '<span class="grow"></span>' + (S.admin ? '<button class="btn pri" data-act="mem-new">+ 인원 추가</button>' : '') + '</div></div>';
+      '<span class="grow"></span>' + (S.ops ? '<button class="btn pri" data-act="mem-new">+ 인원 추가</button>' : '') + '</div></div>';
     PARTS.forEach(function (p) {
       var ms = list.filter(function (m) { return partOf(m.part).key === p.key; });
       if (!ms.length) return;
       h += '<h3 class="part">' + p.label + ' <span class="cnt">' + ms.length + '명</span></h3><div class="grid">' + ms.map(memCard).join('') + '</div>';
     });
-    if (!list.length) h += '<div class="card muted">' + (all.length ? '찾는 이름이 없습니다.' : '명단이 비어 있습니다.' + (S.admin ? ' 관리 탭에서 기초자료를 불러오거나 인원을 추가해 주세요.' : '')) + '</div>';
+    if (!list.length) h += '<div class="card muted">' + (all.length ? '찾는 이름이 없습니다.' : '명단이 비어 있습니다.' + (S.ops ? ' 관리 탭에서 기초자료를 불러오거나 인원을 추가해 주세요.' : '')) + '</div>';
     return h;
   }
   function memCard(m) {
@@ -603,9 +616,9 @@
   function tile(k, v, unit) { return '<div class="tile"><div class="k">' + k + '</div><div class="v">' + v + ' <small>' + unit + '</small></div></div>'; }
   function awardCard(p, rows) {
     var a = S.awards[p.key];
-    if (!a && !S.admin) return '';
+    if (!a && !S.ops) return '';
     var h = '<div class="card award"><div class="row"><b>' + p.label + ' 감사 인사</b><span class="grow"></span>' +
-      (S.admin ? '<button class="btn sm gold" data-act="award">' + (a ? '수정' : '감사 전하기') + '</button>' : '') + '</div>';
+      (S.ops ? '<button class="btn sm gold" data-act="award">' + (a ? '수정' : '감사 전하기') + '</button>' : '') + '</div>';
     if (!a) return h + '<p class="small muted" style="margin:6px 0 0">특별히 고마웠던 분께 감사를 전하는 자리입니다. 상이나 순위가 아니라 고마움을 나누는 인사입니다.</p></div>';
     h += '<div class="who">' + Object.keys(a.winners || {}).map(function (id) {
       return '<div>' + photoBox(id) + esc(nameOf(id)) + '</div>';
@@ -713,7 +726,7 @@
       '<div class="row" style="margin-top:10px"><select id="b-year" style="width:auto">' + Object.keys(years).sort().map(function (yy) {
         return '<option' + (yy === y ? ' selected' : '') + '>' + yy + '</option>';
       }).join('') + '</select><a class="btn sm" href="guide.html">배지 안내 보기</a><span class="grow"></span>' +
-      (S.admin ? '<button class="btn sm gold" data-act="eval-q">분기 돌아보기 · 배지 수여</button><button class="btn sm" data-act="eval-y">누적 · 연말 배지</button>' : '') + '</div></div>';
+      (S.ops ? '<button class="btn sm gold" data-act="eval-q">분기 돌아보기 · 배지 수여</button><button class="btn sm" data-act="eval-y">누적 · 연말 배지</button>' : '') + '</div></div>';
 
     var feed = badgeFeed(15);
     h += '<h2 class="sec">수여 소식</h2>';
@@ -730,7 +743,7 @@
     sortedMembers().forEach(function (m) {
       var mine = Object.keys(visibleBadges(m.id)).filter(function (k) { return k.slice(0, 4) === y; });
       if (!mine.length && (m.status || 'active') !== 'active') return;
-      if (m.hideBadges && !S.admin && m.id !== me) return;
+      if (m.hideBadges && !S.ops && m.id !== me) return;
       h += '<div class="bcard' + (m.id === me ? ' me' : '') + '" data-act="mem" data-id="' + m.id + '"><div class="row" style="flex-wrap:nowrap;gap:8px">' + avatar(m.id, 30) +
         '<b class="grow">' + esc(m.name) + '</b>' + (m.hideBadges ? '<span class="badge retired">비공개</span>' : '') + '</div>' + collection(m.id, y, 34) + '</div>';
     });
@@ -845,8 +858,8 @@
 
   function badgeClick(act, id) {
     var p = id.split('|'), mid = p[0], key = p[1], y = key.slice(0, 4), kind = key.slice(5);
-    if (act === 'slot') { if (S.admin) grantOneModal(mid, y, kind); return; }
-    if (act === 'badge' && S.admin) { grantOneModal(mid, y, kind); return; }
+    if (act === 'slot') { if (S.ops) grantOneModal(mid, y, kind); return; }
+    if (act === 'badge' && S.ops) { grantOneModal(mid, y, kind); return; }
     badgeMeaning(mid, key);
   }
   function badgeMeaning(mid, key) {
@@ -866,9 +879,9 @@
       '<p class="small"><b>' + esc(nameOf(mid)) + '</b> 님' + (rec.at ? ' · ' + fullDate(dateKeyOf(rec.at)) + ' 수여' : '') + '</p>' +
       (rec.note ? '<div class="msg small">' + esc(rec.note) + '</div>' : '') +
       '<p class="small muted" style="margin-top:12px">배지는 신앙의 수준을 판정하는 표지가 아니라, 함께한 걸음을 기억하고 감사하는 표시입니다. <a href="guide.html#badges">배지 안내 보기</a></p>' +
-      '<div class="foot">' + (S.admin ? '<button class="btn" id="bm-edit">수정 · 취소</button>' : '') + '<button class="btn pri" id="bm-close">닫기</button></div>');
+      '<div class="foot">' + (S.ops ? '<button class="btn" id="bm-edit">수정 · 취소</button>' : '') + '<button class="btn pri" id="bm-close">닫기</button></div>');
     $('bm-close').onclick = function () { closeModal(); };
-    if (S.admin) $('bm-edit').onclick = function () { grantOneModal(mid, key.slice(0, 4), kind); };
+    if (S.ops) $('bm-edit').onclick = function () { grantOneModal(mid, key.slice(0, 4), kind); };
   }
 
   // 관리자: 누적 30·60·100회와 연말 완주 배지
@@ -977,17 +990,21 @@
         (r.award ? ' (' + esc(r.award) + ')' : '') + ' <span class="muted">' + esc(r.by || '') + '</span></span><button class="btn sm bad" data-act="issue-del" data-id="' + r.k + '">지우기</button></div>';
     }).join('') : '<p class="small muted" style="margin:6px 0 0">아직 기록이 없습니다. 맞춤 인쇄에서 "지급 기록에 남기기"를 켜면 쌓입니다.</p>') + '</div>';
 
-    h += '<div class="card"><b>관리자</b><p class="small muted" style="margin:4px 0 8px">관리자는 명단 · 사진 · 예배 담당 · 출석 · 배지 · 감사 인사 · 문서 · 공지를 모두 고칠 수 있습니다. ' +
-      (S.master ? '앱에 한 번 로그인한 사람만 목록에 나옵니다.' : '관리자 지정은 마스터(' + esc(MASTER_NAME) + ')만 할 수 있습니다.') + '</p>';
-    h += '<div class="row small" style="margin-bottom:4px"><b>' + esc(MASTER_NAME) + '</b><span class="muted">' + esc(MASTER_EMAIL) + ' · 마스터</span></div>';
+    h += '<div class="card"><b>지기 (관리자)</b><div class="roles">' + ['master', 'ops', 'team'].map(function (r) {
+        return '<div class="small"><span class="badge title">' + roleLabel(r) + '</span> ' + ROLES[r][2] + '</div>';
+      }).join('') + '</div>' +
+      '<p class="small muted" style="margin:8px 0">' + (S.master ? '지기 지정은 총괄지기만 할 수 있습니다. 앱에 한 번 로그인한 사람만 목록에 나옵니다.' : '지기 지정은 총괄지기(' + esc(MASTER_NAME) + ')만 할 수 있습니다.') + '</p>';
+    h += '<div class="row small doc"><span class="grow"><b>' + esc(MASTER_NAME) + '</b> <span class="muted">' + esc(MASTER_EMAIL) + '</span></span><span class="badge title">' + roleLabel('master') + '</span></div>';
     var users = Object.keys(S.users).map(function (k) { return Object.assign({ uid: k }, S.users[k]); })
       .filter(function (u) { return (u.email || '') !== MASTER_EMAIL.toLowerCase(); })
-      .sort(function (a, b) { return (a.email || '') < (b.email || '') ? -1 : 1; });
+      .sort(function (a, b) { return (a.name || a.email || '').localeCompare(b.name || b.email || '', 'ko'); });
     users.forEach(function (u) {
-      var on = !!S.admins[u.uid];
-      if (!S.master && !on) return;
-      h += '<div class="row small" style="margin-top:4px">' +
-        (S.master ? '<label><input type="checkbox" data-admin="' + u.uid + '"' + (on ? ' checked' : '') + '> ' : '<span>') + '<b>' + esc(u.name || '-') + '</b> <span class="muted">' + esc(u.email) + '</span>' + (S.master ? '</label>' : '</span>') + '</div>';
+      var a = S.admins[u.uid], r = a ? (a.role === 'team' ? 'team' : 'ops') : '';
+      if (!S.master && !r) return;
+      h += '<div class="row small doc"><span class="grow"><b>' + esc(u.name || '-') + '</b> <span class="muted">' + esc(u.email) + '</span></span>' +
+        (S.master ? '<select data-role-of="' + u.uid + '" style="width:auto;padding:3px 8px">' + [['', '지기 아님'], ['ops', roleLabel('ops')], ['team', roleLabel('team')]].map(function (op) {
+          return '<option value="' + op[0] + '"' + (op[0] === r ? ' selected' : '') + '>' + op[1] + '</option>';
+        }).join('') + '</select>' : '<span class="badge title">' + roleLabel(r) + '</span>') + '</div>';
     });
     h += '</div>';
 
@@ -1159,9 +1176,9 @@
       '<div class="tiles" style="margin-top:14px">' +
       '<div class="tile"><div class="k">' + y + '년</div><div class="v">' + (ty.serve + ty.attend) + ' <small>회</small></div><div class="small muted">' + hm(ty.minutes) + (y + '-12-31' >= c.pointStart ? ' · ' + ty.points + '점' : '') + '</div></div>' +
       '<div class="tile"><div class="k">누적</div><div class="v">' + (al.serve + al.attend) + ' <small>회</small></div><div class="small muted">' + hm(al.minutes) + '</div></div></div>' +
-      '<div class="foot">' + (S.admin ? '<button class="btn gold" id="m-badge">배지 주기</button><button class="btn" id="m-edit">편집</button>' : '') + '<button class="btn pri" id="m-close">닫기</button></div>');
+      '<div class="foot">' + (S.ops ? '<button class="btn gold" id="m-badge">배지 주기</button><button class="btn" id="m-edit">편집</button>' : '') + '<button class="btn pri" id="m-close">닫기</button></div>');
     $('m-close').onclick = function () { closeModal(); };
-    if (S.admin) {
+    if (S.ops) {
       $('m-edit').onclick = function () { editMember(id); };
       $('m-badge').onclick = function () { grantOneModal(id); };
     }
@@ -1357,7 +1374,7 @@
       var pm = S.members[t.value];
       if (pm) $('pr-role').value = (pm.title ? pm.title + ' · ' : '') + partOf(pm.part).label;
     }
-    else if (t.hasAttribute('data-admin')) setAdmin(t.getAttribute('data-admin'), t.checked);
+    else if (t.hasAttribute('data-role-of')) setRole(t.getAttribute('data-role-of'), t.value);
   });
 
   function statsCsv() {
@@ -1380,10 +1397,10 @@
       .then(function () { toast('기준을 저장했습니다.'); render(true); }).catch(fail);
   }
 
-  function setAdmin(uid, on) {
+  function setRole(uid, role) {
     var u = S.users[uid] || {};
-    db.ref(R + 'admins/' + uid).set(on ? { email: u.email || '', name: u.name || '' } : null)
-      .then(function () { toast(on ? '관리자로 지정했습니다.' : '관리자에서 뺐습니다.'); }).catch(fail);
+    db.ref(R + 'admins/' + uid).set(role ? { email: u.email || '', name: u.name || '', role: role } : null)
+      .then(function () { toast((u.name || u.email) + ' 님: ' + (role ? roleLabel(role) + '로 지정했습니다.' : '지기에서 뺐습니다.')); }).catch(fail);
   }
 
   function importFile(f) {

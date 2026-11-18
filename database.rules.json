@@ -4,7 +4,8 @@
       ".read": "auth != null && auth.token.email_verified === true && auth.token.email.endsWith('@cgnmail.net')",
       "admins": {
         "$uid": {
-          ".write": "auth != null && auth.token.email === 'cgn210@cgnmail.net' && auth.token.email_verified === true"
+          ".write": "auth != null && auth.token.email === 'cgn210@cgnmail.net' && auth.token.email_verified === true",
+          ".validate": "!newData.exists() || newData.child('role').val() === 'ops' || newData.child('role').val() === 'team'"
         }
       },
       "users": {
@@ -13,10 +14,10 @@
         }
       },
       "members": {
-        ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'cgn210@cgnmail.net' || root.child('praise/admins').child(auth.uid).exists())"
+        ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'cgn210@cgnmail.net' || (root.child('praise/admins').child(auth.uid).exists() && root.child('praise/admins').child(auth.uid).child('role').val() !== 'team'))"
       },
       "photos": {
-        ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'cgn210@cgnmail.net' || root.child('praise/admins').child(auth.uid).exists())",
+        ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'cgn210@cgnmail.net' || (root.child('praise/admins').child(auth.uid).exists() && root.child('praise/admins').child(auth.uid).child('role').val() !== 'team'))",
         "$id": {
           ".validate": "newData.isString() && newData.val().length < 200000"
         }
@@ -25,19 +26,19 @@
         ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'cgn210@cgnmail.net' || root.child('praise/admins').child(auth.uid).exists())"
       },
       "settings": {
-        ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'cgn210@cgnmail.net' || root.child('praise/admins').child(auth.uid).exists())"
+        ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'cgn210@cgnmail.net' || (root.child('praise/admins').child(auth.uid).exists() && root.child('praise/admins').child(auth.uid).child('role').val() !== 'team'))"
       },
       "awards": {
-        ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'cgn210@cgnmail.net' || root.child('praise/admins').child(auth.uid).exists())"
+        ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'cgn210@cgnmail.net' || (root.child('praise/admins').child(auth.uid).exists() && root.child('praise/admins').child(auth.uid).child('role').val() !== 'team'))"
       },
       "notice": {
         ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'cgn210@cgnmail.net' || root.child('praise/admins').child(auth.uid).exists())"
       },
       "badges": {
-        ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'cgn210@cgnmail.net' || root.child('praise/admins').child(auth.uid).exists())"
+        ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'cgn210@cgnmail.net' || (root.child('praise/admins').child(auth.uid).exists() && root.child('praise/admins').child(auth.uid).child('role').val() !== 'team'))"
       },
       "issues": {
-        ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'cgn210@cgnmail.net' || root.child('praise/admins').child(auth.uid).exists())"
+        ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'cgn210@cgnmail.net' || (root.child('praise/admins').child(auth.uid).exists() && root.child('praise/admins').child(auth.uid).child('role').val() !== 'team'))"
       },
       "cheers": {
         "$badge": {

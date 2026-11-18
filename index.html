@@ -57,6 +57,9 @@
   }
   .top .sub { font-size: 12.5px; color: #cfd6df; }
   .top .who { margin-left: auto; text-align: right; font-size: 12.5px; color: #e6e9ee; }
+  .top .who .role { display: inline-block; font-size: 11px; color: #3b2405; background: #e3b871; border-radius: 10px; padding: 0 7px; margin-left: 2px; }
+  .top .who .role:empty { display: none; }
+  .roles div { margin-top: 4px; }
   .top .who button { margin-top: 2px; background: rgba(255,255,255,0.14); border: 0; color: #fff; border-radius: 8px; padding: 3px 10px; font-size: 12px; }
 
   nav.tabs { position: sticky; top: 0; z-index: 20; background: rgba(255,253,248,0.94); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
@@ -246,6 +249,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="praise.js?v=10"></script>
+<script src="praise.js?v=11"></script>
 </body>
 </html>
