@@ -62,10 +62,12 @@
   .tier b { display: block; font-size: 17px; }
   .tier .p { font-size: 22px; font-weight: 900; color: var(--gold-d); }
   .tier small { color: var(--muted); }
-  .qrow { display: grid; grid-template-columns: 150px repeat(3, 1fr); gap: 8px; align-items: center; padding: 10px 0; border-top: 1px dashed var(--line); }
+  /* 배지 그림은 위쪽 기준으로 맞춰 이름 길이와 상관없이 한 줄로 */
+  .qrow { display: grid; grid-template-columns: 150px repeat(3, 1fr); gap: 8px; align-items: start; padding: 12px 0; border-top: 1px dashed var(--line); }
+  .qrow .ql { align-self: center; }
   .qrow .ql b { display: block; }
   .qrow .ql small { color: var(--muted); font-size: 12px; line-height: 1.5; display: block; white-space: nowrap; }
-  .bd { text-align: center; font-size: 13px; line-height: 1.35; }
+  .bd { text-align: center; font-size: 13px; line-height: 1.35; word-break: keep-all; }
   .bd img { width: 74px; height: 74px; display: block; margin: 0 auto 4px; }
   .bd small { color: var(--muted); }
   .formula { text-align: center; font-size: 19px; font-weight: 900; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 10px; margin: 10px 0; }
