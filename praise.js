@@ -1227,7 +1227,86 @@
     s.remove();
     if (!silent && history.state && history.state.sheet) { skipPop = true; history.back(); }
   }
-  new MutationObserver(function () { enhanceSelects(); }).observe(document.body, { childList: true, subtree: true });
+  // 값 목록에서 고르는 선택 창 (custom 을 주면 맨 아래에 직접 적기 칸)
+  function openChoiceSheet(o) {
+    closeSheet(true);
+    var h = '<div class="sel-sheet"><div class="sel-title">' + esc(o.title) + '</div>' + o.options.map(function (x, i) {
+      return '<button type="button" class="sel-opt' + (x[0] === o.current ? ' on' : '') + '" data-i="' + i + '">' + esc(x[1]) + '</button>';
+    }).join('');
+    var known = o.options.some(function (x) { return x[0] === o.current; });
+    if (o.custom) h += '<div class="sel-custom"><div class="small muted" style="font-weight:700;margin-bottom:6px">' + esc(o.custom) + '</div>' +
+      '<div class="row" style="flex-wrap:nowrap"><input type="text" id="sel-own" value="' + esc(known ? '' : o.current) + '" placeholder="목록에 없는 이름"><button type="button" class="btn pri" id="sel-own-ok">확인</button></div></div>';
+    var bg = document.createElement('div');
+    bg.className = 'sel-bg'; bg.id = 'sel-sheet';
+    bg.innerHTML = h + '</div>';
+    document.body.appendChild(bg);
+    history.pushState(Object.assign({}, history.state || {}, { sheet: true }), '');
+    bg.onclick = function (ev) {
+      if (ev.target === bg) { closeSheet(); return; }
+      if (ev.target.id === 'sel-own-ok') {
+        var v = $('sel-own').value.trim();
+        closeSheet(); o.pick(v); return;
+      }
+      var b = ev.target.closest('.sel-opt');
+      if (!b) return;
+      closeSheet(); o.pick(o.options[+b.getAttribute('data-i')][0]);
+    };
+    if ($('sel-own')) $('sel-own').onkeydown = function (ev) { if (ev.key === 'Enter') $('sel-own-ok').click(); };
+  }
+
+  // 날짜 칸: 휴대폰 기본 달력 대신 앱 디자인 달력 (값은 원래 칸에 YYYY-MM-DD 로 그대로)
+  function dateText(v) { return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v.slice(0, 4) + '. ' + (+v.slice(5, 7)) + '. ' + (+v.slice(8)) + ' (' + DOW.charAt(dowOf(v)) + ')' : '날짜 고르기'; }
+  function enhanceDates() {
+    document.querySelectorAll('input[type=date]:not([data-enh])').forEach(function (inp) {
+      inp.setAttribute('data-enh', '1');
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'sel-btn date-btn';
+      b.innerHTML = '<span class="v"></span>';
+      b.firstChild.textContent = dateText(inp.value);
+      inp.style.display = 'none';
+      inp.parentNode.insertBefore(b, inp.nextSibling);
+      b.onclick = function (ev) { ev.preventDefault(); openDateSheet(inp, b); };
+      inp.addEventListener('change', function () { b.firstChild.textContent = dateText(inp.value); });
+    });
+  }
+  function openDateSheet(inp, btn) {
+    closeSheet(true);
+    var sel = inp.value, ym = (/^\d{4}-\d{2}/.test(sel) ? sel : todayKey()).slice(0, 7);
+    var lb = inp.previousElementSibling, title = lb && lb.tagName === 'LABEL' ? String(lb.firstChild.textContent).trim() : '날짜';
+    var bg = document.createElement('div');
+    bg.className = 'sel-bg'; bg.id = 'sel-sheet';
+    document.body.appendChild(bg);
+    history.pushState(Object.assign({}, history.state || {}, { sheet: true }), '');
+    function draw() {
+      var y = +ym.slice(0, 4), m = +ym.slice(5, 7), first = new Date(y, m - 1, 1).getDay(), days = new Date(y, m, 0).getDate(), today = todayKey();
+      var h = '<div class="sel-sheet cal"><div class="sel-title">' + esc(title) + '</div>' +
+        '<div class="cal-head"><button type="button" class="nav" data-mv="-1">‹</button><b>' + y + '년 ' + m + '월</b><button type="button" class="nav" data-mv="1">›</button></div>' +
+        '<div class="cal-grid">' + DOW.split('').map(function (d, i) { return '<span class="cal-dow' + (i === 0 ? ' sun' : i === 6 ? ' sat' : '') + '">' + d + '</span>'; }).join('');
+      for (var i = 0; i < first; i++) h += '<span></span>';
+      for (var d = 1; d <= days; d++) {
+        var k = ym + '-' + pad(d), w = (first + d - 1) % 7;
+        h += '<button type="button" class="cal-day' + (k === sel ? ' on' : '') + (k === today ? ' today' : '') + (w === 0 ? ' sun' : w === 6 ? ' sat' : '') + '" data-d="' + k + '">' + d + '</button>';
+      }
+      h += '</div><div class="cal-foot"><button type="button" class="btn" data-d="' + today + '">오늘</button><button type="button" class="btn" data-close="1">닫기</button></div></div>';
+      bg.innerHTML = h;
+    }
+    draw();
+    bg.onclick = function (ev) {
+      if (ev.target === bg || ev.target.hasAttribute('data-close')) { closeSheet(); return; }
+      var mv = ev.target.getAttribute('data-mv');
+      if (mv) { ym = addMonth(ym, +mv); draw(); return; }
+      var d = ev.target.getAttribute('data-d');
+      if (!d) return;
+      closeSheet();
+      if (d !== inp.value) {
+        inp.value = d;
+        inp.dispatchEvent(new Event('input', { bubbles: true }));
+        inp.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    };
+  }
+  new MutationObserver(function () { enhanceSelects(); enhanceDates(); }).observe(document.body, { childList: true, subtree: true });
 
   // 탭 옮기기 (뒤로가기 기록을 남김)
   var skipPop = false;
@@ -1430,9 +1509,8 @@
       '<label class="btn sm">사진 올리기<input type="file" id="p-file" accept="image/*" class="hidden"></label> ' +
       '<button class="btn sm" id="p-del">사진 빼기</button><div class="small muted" style="margin-top:4px">증명사진 비율(3:4)로 맞춰 저장합니다.</div></div></div>' +
       '<label class="f">이름</label><input type="text" id="p-name" value="' + esc(m.name) + '">' +
-      '<label class="f">직임 <span style="font-weight:500">(아래에서 고르거나 직접 적기 · 비우면 표시 안 함)</span></label><input type="text" id="p-title" value="' + esc(m.title || '') + '" placeholder="예: 총괄, 총무, 보컬 파트장" autocomplete="off">' +
-      // 브라우저 기본 목록 대신 앱 모양의 고르기 버튼
-      '<div class="tchips" id="p-tchips">' + [''].concat(TITLES).map(function (t) { return '<button type="button" class="tchip" data-title="' + esc(t) + '">' + (t ? esc(t) : '없음') + '</button>'; }).join('') + '</div>' +
+      '<label class="f">직임 <span style="font-weight:500">(눌러서 고르거나 직접 적기 · 없음이면 표시 안 함)</span></label>' +
+      '<input type="hidden" id="p-title" value="' + esc(m.title || '') + '"><button type="button" class="sel-btn" id="p-title-btn"><span class="v"></span></button>' +
       '<label class="f">회사 메일 <span style="font-weight:500">(내 기록과 연결)</span></label><input type="email" id="p-email" value="' + esc(m.email || '') + '" placeholder="아이디' + ALLOWED_EMAIL_DOMAIN + '">' +
       '<label class="f">파트</label><select id="p-part">' + PARTS.map(function (p) {
         return '<option value="' + p.key + '"' + (p.key === (m.part || '') ? ' selected' : '') + '>' + p.label + '</option>';
@@ -1453,17 +1531,18 @@
       $('p-del').disabled = !photo;
     }
     drawPhoto();
-    function markTitle() {
-      var v = $('p-title').value.trim();
-      document.querySelectorAll('#p-tchips .tchip').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-title') === v); });
+    function showTitle() {
+      var v = $('p-title').value.trim(), s = $('p-title-btn').firstChild;
+      s.textContent = v || '없음';
+      s.classList.toggle('ph', !v);
     }
-    markTitle();
-    $('p-title').oninput = markTitle;
-    $('p-tchips').onclick = function (ev) {
-      var b = ev.target.closest('.tchip');
-      if (!b) return;
-      $('p-title').value = b.getAttribute('data-title');
-      markTitle();
+    showTitle();
+    $('p-title-btn').onclick = function () {
+      openChoiceSheet({
+        title: '직임', current: $('p-title').value.trim(), custom: '직접 적기',
+        options: [['', '없음']].concat(TITLES.map(function (x) { return [x, x]; })),
+        pick: function (v) { $('p-title').value = v; showTitle(); }
+      });
     };
     $('p-file').onchange = function () {
       var f = this.files[0];

@@ -281,6 +281,23 @@
     .modal.full { max-width: none; width: 100%; height: 100vh; height: 100dvh; max-height: none; border-radius: 0; }
   }
 
+  /* 앱 디자인 달력 */
+  .sel-btn .v.ph { color: var(--muted); }
+  .sel-custom { padding: 12px 20px 4px; }
+  .sel-custom input { padding: 8px 10px; }
+  .cal-head { display: flex; align-items: center; justify-content: space-between; padding: 0 16px 8px; }
+  .cal-head b { font-size: 16px; color: var(--navy); }
+  .cal-head .nav { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: #fff; font-size: 18px; color: var(--navy); cursor: pointer; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 0 14px; }
+  .cal-dow { text-align: center; font-size: 12px; font-weight: 700; color: var(--muted); padding: 4px 0; }
+  .cal-dow.sun, .cal-day.sun { color: #c0392b; }
+  .cal-dow.sat, .cal-day.sat { color: var(--navy2); }
+  .cal-day { aspect-ratio: 1 / 1; border: 0; border-radius: 50%; background: none; font: inherit; font-size: 15px; color: var(--text); cursor: pointer; }
+  .cal-day:hover { background: #fbf3e3; }
+  .cal-day.today { box-shadow: inset 0 0 0 1.5px var(--gold); font-weight: 700; }
+  .cal-day.on { background: var(--navy); color: #fff; font-weight: 700; box-shadow: none; }
+  .cal-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px 0; }
+
   /* 모달 */
   .modal-bg { position: fixed; inset: 0; background: rgba(12,29,48,0.5); z-index: 50; display: flex; align-items: flex-start; justify-content: center; padding: 30px 12px; overflow-y: auto; }
   .modal { background: var(--card); border-radius: 16px; width: 100%; max-width: 520px; padding: 18px; }
@@ -330,6 +347,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="praise.js?v=29"></script>
+<script src="praise.js?v=30"></script>
 </body>
 </html>
