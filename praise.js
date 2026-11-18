@@ -810,11 +810,9 @@
       lastPart = pk;
       return '<div class="q-grp">' + partOf(pk).label + '</div>';
     }
-    var ys = yearChoices(y), yi = ys.indexOf(y);
     modal('<h3>분기 돌아보기 · 배지 수여</h3>' +
       // 해는 ‹ › 로 넘기고 분기는 버튼으로 (앱의 다른 선택 버튼과 같은 모양)
-      '<div class="q-pick"><div class="ystep"><button class="nav" id="eq-prev"' + (yi <= 0 ? ' disabled' : '') + '>‹</button><b>' + y + '년</b>' +
-      '<button class="nav" id="eq-next"' + (yi >= ys.length - 1 ? ' disabled' : '') + '>›</button></div>' +
+      '<div class="q-pick">' + yearStep(y, 'eq') +
       '<div class="seg qseg">' + [1, 2, 3, 4].map(function (v) {
         return '<button data-q="' + v + '" class="' + (v === +q ? 'on' : '') + '">' + v + '분기</button>';
       }).join('') + '</div></div>' +
@@ -834,8 +832,7 @@
       '<label class="f">격려의 말 <span style="font-weight:500">(이번에 새로 수여하는 사람의 소식에 함께 보입니다)</span></label>' +
       '<textarea id="eq-note" placeholder="예: 이른 아침 자리를 꾸준히 지켜 주셔서 감사합니다."></textarea>' +
       '<div class="foot"><button class="btn" id="eq-close">닫기</button><button class="btn gold" id="eq-save">수여 저장</button></div>');
-    $('eq-prev').onclick = function () { if (yi > 0) evalQuarterModal(ys[yi - 1], q); };
-    $('eq-next').onclick = function () { if (yi < ys.length - 1) evalQuarterModal(ys[yi + 1], q); };
+    bindYearStep(y, 'eq', function (ny) { evalQuarterModal(ny, q); });
     document.querySelectorAll('#modal [data-q]').forEach(function (b) {
       b.onclick = function () { evalQuarterModal(y, +b.getAttribute('data-q')); };
     });
@@ -869,6 +866,18 @@
     }, 80);
   }
 
+  // 해 고르기: ‹ 2026년 › (분기 돌아보기 · 누적 · 배지 주기 창에서 함께 씀)
+  function yearStep(y, pre) {
+    var ys = yearChoices(y), yi = ys.indexOf(y);
+    return '<div class="ystep"><button class="nav" id="' + pre + '-prev"' + (yi <= 0 ? ' disabled' : '') + '>‹</button><b>' + y + '년</b>' +
+      '<button class="nav" id="' + pre + '-next"' + (yi >= ys.length - 1 ? ' disabled' : '') + '>›</button></div>';
+  }
+  function bindYearStep(y, pre, go) {
+    var ys = yearChoices(y), yi = ys.indexOf(y);
+    $(pre + '-prev').onclick = function () { if (yi > 0) go(ys[yi - 1]); };
+    $(pre + '-next').onclick = function () { if (yi < ys.length - 1) go(ys[yi + 1]); };
+  }
+
   // 관리자: 한 사람에게 배지 하나 주기 (명단에서 사람을 눌러 '배지 주기')
   function grantOneModal(id, y, kind) {
     y = y || lastQuarter()[0];
@@ -876,28 +885,38 @@
     var key = y + '-' + kind, cur = (S.badges[id] || {})[key], isQ = kind.charAt(0) === 'Q';
     var o = isQ ? (evalQuarter(y, +kind.slice(1))[id] || { assigned: 0, excused: 0, a: 0, d: 0, tier: '' }) : null;
     var yr = !isQ ? (evalYear(y)[id] || { a: 0 }) : null;
-    var kinds = [['Q1', '1분기'], ['Q2', '2분기'], ['Q3', '3분기'], ['Q4', '4분기']].concat(MILES.map(function (mi) { return [mi[0], '누적 ' + mi[1] + '회 기념']; }), [['YEAR', '한 해 함께 완주']]);
-    var tierVal = cur ? cur.code : (o && o.tier) || 'BEGIN';
-    modal('<h3>' + esc(nameOf(id)) + ' 님 배지 주기</h3>' +
-      '<div class="row"><select id="g1-y" style="width:auto">' + yearChoices(y).map(function (v) { return '<option' + (v === y ? ' selected' : '') + '>' + v + '</option>'; }).join('') + '</select>' +
-      '<select id="g1-k" style="width:auto">' + kinds.map(function (k) { return '<option value="' + k[0] + '"' + (k[0] === kind ? ' selected' : '') + '>' + k[1] + '</option>'; }).join('') + '</select>' +
-      (isQ ? '<select id="g1-t" style="width:auto">' + [['BEGIN', '동행'], ['GROW', '자람'], ['BLOOM', '결실'], ['CARD', '감사 카드']].map(function (op) {
-        return '<option value="' + op[0] + '"' + (op[0] === tierVal ? ' selected' : '') + '>' + op[1] + (o && op[0] === o.tier ? ' (제안)' : '') + '</option>';
-      }).join('') + '</select>' : '') + '</div>' +
-      '<div class="row" style="margin-top:10px;gap:12px;flex-wrap:nowrap"><span id="g1-prev"></span><div class="small">' +
-      (isQ ? '배정 ' + o.assigned + '회 · 승인 제외 ' + o.excused + '회 · 약속한 일정 D ' + o.d + '회 · 실제 수행 A ' + o.a + '회' + (o.d ? ' · 참여율 ' + pct(o.a / o.d) : '') +
+    var tier = cur ? cur.code : (o && o.tier) || 'BEGIN';
+    function seg(items, sel, attr) {
+      return '<div class="seg pick">' + items.map(function (k) {
+        return '<button data-' + attr + '="' + k[0] + '" class="' + (k[0] === sel ? 'on' : '') + '">' + k[1] + (k[2] ? '<i class="sug">제안</i>' : '') + '</button>';
+      }).join('') + '</div>';
+    }
+    modal('<h3>' + esc(nameOf(id)) + ' 님 배지 주기</h3>' + yearStep(y, 'g1') +
+      '<div class="pick-lb">분기 배지</div>' + seg([['Q1', '1분기'], ['Q2', '2분기'], ['Q3', '3분기'], ['Q4', '4분기']], kind, 'k') +
+      '<div class="pick-lb">기념 · 연말 배지</div>' + seg(MILES.map(function (mi) { return [mi[0], mi[1] + '회']; }).concat([['YEAR', '완주']]), kind, 'k') +
+      (isQ ? '<div class="pick-lb">단계</div>' + seg([['BEGIN', '동행', o.tier === 'BEGIN'], ['GROW', '자람', o.tier === 'GROW'], ['BLOOM', '결실', o.tier === 'BLOOM'], ['CARD', '감사 카드', o.tier === 'CARD']], tier, 't') : '') +
+      '<div class="row" style="margin-top:12px;gap:12px;flex-wrap:nowrap"><span id="g1-prev-img"></span><div class="small">' +
+      (isQ ? '배정 ' + o.assigned + '회 · 승인 제외 ' + o.excused + '회 · 약속한 일정 D ' + o.d + '회 · 실제 수행 A ' + o.a + '회' + (o.d ? ' · 참여율 <b>' + pct(o.a / o.d) + '</b>' : '') +
         (o.d && o.d < MIN_SAMPLE ? '<br>D가 ' + MIN_SAMPLE + '회 미만이라 운영안은 감사 카드를 권합니다.' : '')
         : y + '년 실제 섬김 ' + yr.a + '회') +
       (cur ? '<br><b style="color:var(--gold-d)">이미 수여됨: ' + esc(badgeInfo(key, cur).title) + '</b>' : '') + '</div></div>' +
       '<label class="f">격려의 말 (수여 소식에 함께 보입니다)</label><textarea id="g1-note">' + esc(cur && cur.note || '') + '</textarea>' +
       '<div class="foot">' + (cur ? '<button class="btn bad" id="g1-del">수여 취소</button><span class="grow"></span>' : '') +
       '<button class="btn" id="g1-close">닫기</button><button class="btn gold" id="g1-save">' + (cur ? '바꾸기' : '배지 주기') + '</button></div>');
-    function code() { return isQ ? $('g1-t').value : kind; }
-    function preview() { $('g1-prev').innerHTML = badgeImg(key, { code: code() }, 64); }
+    function code() { return isQ ? tier : kind; }
+    function preview() { $('g1-prev-img').innerHTML = badgeImg(key, { code: code() }, 64); }
     preview();
-    if (isQ) $('g1-t').onchange = preview;
-    $('g1-y').onchange = function () { grantOneModal(id, $('g1-y').value, $('g1-k').value); };
-    $('g1-k').onchange = function () { grantOneModal(id, $('g1-y').value, $('g1-k').value); };
+    bindYearStep(y, 'g1', function (ny) { grantOneModal(id, ny, kind); });
+    document.querySelectorAll('#modal [data-k]').forEach(function (b) {
+      b.onclick = function () { grantOneModal(id, y, b.getAttribute('data-k')); };
+    });
+    document.querySelectorAll('#modal [data-t]').forEach(function (b) {
+      b.onclick = function () {
+        tier = b.getAttribute('data-t');
+        document.querySelectorAll('#modal [data-t]').forEach(function (x) { x.classList.toggle('on', x === b); });
+        preview();
+      };
+    });
     $('g1-close').onclick = function () { closeModal(); };
     $('g1-save').onclick = function () {
       var rec = { code: code(), a: isQ ? o.a : yr.a, at: Date.now(), by: myName() };
@@ -955,7 +974,7 @@
       var pk = partOf((S.members[id] || {}).part).key;
       if (pk === lastPart) return '';
       lastPart = pk;
-      return '<tr class="grp"><td class="l" colspan="7">' + partOf(pk).label + '</td></tr>';
+      return '<div class="q-grp">' + partOf(pk).label + '</div>';
     }
     function yearOk(id) {
       var o = ev[id], bs = S.badges[id] || {};
@@ -966,21 +985,25 @@
       }
       return o.rate * 100 >= YEAR_RATE;
     }
-    modal('<h3>누적 · 연말 배지</h3>' +
-      '<div class="row"><select id="ey-y" style="width:auto">' + yearChoices(y).map(function (v) { return '<option' + (v === y ? ' selected' : '') + '>' + v + '</option>'; }).join('') + '</select></div>' +
-      '<p class="small muted">누적 배지는 그해 실제 섬김(승인 제외 미포함) 30 · 60 · 100회, 연말 완주는 네 분기 배지와 연간 참여율 ' + YEAR_RATE + '% 이상, 모든 분기 70% 이상입니다. 기준을 채운 칸은 금색으로 표시합니다.</p>' +
-      (ids.length ? '<div class="tbl-wrap"><table class="rank"><thead><tr><th class="l">이름</th><th>실제 섬김</th><th>연간</th><th>30</th><th>60</th><th>100</th><th>완주</th></tr></thead><tbody>' +
+    modal('<h3>누적 · 연말 배지</h3>' + yearStep(y, 'ey') +
+      '<p class="small muted">누적 배지는 그해 실제 섬김(승인 제외 미포함) 30 · 60 · 100회, 연말 완주는 네 분기 배지와 연간 참여율 ' + YEAR_RATE + '% 이상, 모든 분기 70% 이상입니다. 기준을 채운 칸은 금색 테두리로 표시합니다. 눌러서 고르면 남색이 됩니다.</p>' +
+      (ids.length ? '<div class="q-list">' +
         ids.map(function (id) {
           var o = ev[id] || { a: 0, d: 0, rate: 0 }, bs = S.badges[id] || {};
-          function box(code, ok) {
-            return '<td class="' + (ok ? 'ok-cell' : '') + '"><input type="checkbox" data-ms="' + id + '|' + code + '"' + (bs[y + '-' + code] ? ' checked' : '') + '></td>';
+          function chip(code, label, ok) {
+            var on = !!bs[y + '-' + code];
+            return '<label class="mchip' + (ok ? ' ok' : '') + (on ? ' on' : '') + '"><input type="checkbox" data-ms="' + id + '|' + code + '"' + (on ? ' checked' : '') + '>' + label + '</label>';
           }
-          return partRow(id) + '<tr><td class="l">' + esc(nameOf(id)) + '</td><td>' + o.a + '</td><td>' + (o.d ? pct(o.rate) : '-') + '</td>' +
-            MILES.map(function (mi) { return box(mi[0], o.a >= mi[1]); }).join('') + box('YEAR', yearOk(id)) + '</tr>';
-        }).join('') + '</tbody></table></div>' : '<p class="muted small">이 해에 섬김 기록이 없습니다.</p>') +
+          return partRow(id) + '<div class="q-row"><div class="q-who"><b>' + esc(nameOf(id)) + '</b>' +
+            '<div class="q-nums">실제 섬김 ' + o.a + '회 · 연간 <b>' + (o.d ? pct(o.rate) : '-') + '</b></div></div><div class="mchips">' +
+            MILES.map(function (mi) { return chip(mi[0], mi[1], o.a >= mi[1]); }).join('') + chip('YEAR', '완주', yearOk(id)) + '</div></div>';
+        }).join('') + '</div>' : '<p class="muted small">이 해에 섬김 기록이 없습니다.</p>') +
       '<label class="f">격려의 말</label><textarea id="ey-note" placeholder="예: 한 해 동안 함께 걸어 주셔서 감사합니다."></textarea>' +
       '<div class="foot"><button class="btn" id="ey-close">닫기</button><button class="btn gold" id="ey-save">저장</button></div>');
-    $('ey-y').onchange = function () { evalYearModal($('ey-y').value); };
+    bindYearStep(y, 'ey', function (ny) { evalYearModal(ny); });
+    document.querySelectorAll('#modal .mchip input').forEach(function (x) {
+      x.onchange = function () { x.parentNode.classList.toggle('on', x.checked); };
+    });
     $('ey-close').onclick = function () { closeModal(); };
     $('ey-save').onclick = function () {
       var up = {}, n = 0, note = $('ey-note').value.trim(), by = myName();

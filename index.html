@@ -215,6 +215,16 @@
   .q-row:last-child { border-bottom: 0; }
   .q-who { flex: 1; min-width: 0; }
   .q-nums { font-size: 12px; color: var(--muted); }
+  .seg.pick { display: flex; width: 100%; margin-bottom: 2px; }
+  .seg.pick button { flex: 1; padding: 7px 4px; position: relative; }
+  .seg.pick .sug { display: block; font-style: normal; font-size: 10px; line-height: 1; margin-top: 2px; color: var(--gold-d); font-weight: 700; }
+  .seg.pick button.on .sug { color: #f3e6cc; }
+  .pick-lb { font-size: 12.5px; color: var(--muted); font-weight: 700; margin: 10px 0 4px; }
+  .mchips { display: flex; gap: 4px; flex: none; }
+  .mchip { border: 1.5px solid var(--line); border-radius: 8px; padding: 4px 7px; font-size: 12.5px; font-weight: 700; color: var(--muted); background: #fff; cursor: pointer; user-select: none; }
+  .mchip input { display: none; }
+  .mchip.ok { border-color: var(--gold); color: #84591f; background: #fbf3e3; }
+  .mchip.on { background: var(--navy); border-color: var(--navy); color: #fff; }
   .q-row select { width: auto; flex: none; padding: 5px 8px; font-size: 13.5px; max-width: 46%; }
   table.rank tr.grp td { background: var(--gold-l); color: #84591f; font-weight: 700; font-size: 12.5px; padding: 5px 6px; }
 
@@ -266,6 +276,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="praise.js?v=21"></script>
+<script src="praise.js?v=22"></script>
 </body>
 </html>
