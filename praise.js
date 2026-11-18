@@ -464,6 +464,8 @@
     var main = $('main'), act = document.activeElement;
     // 관리 탭에서 입력 중이면 다른 사람 변경으로 입력값이 지워지지 않게 기다립니다
     if (!force && (S.tab === 'admin' || S.tab === 'badges') && act && main.contains(act) && /INPUT|SELECT|TEXTAREA/.test(act.tagName)) return;
+    // 이름 찾기 입력 중에 자료가 바뀌면 명단 부분만 다시 그림 (한글 조합 보호)
+    if (!force && S.tab === 'roster' && act && act.id === 'q' && $('roster-list')) { $('roster-list').innerHTML = rosterList(); return; }
     if (S.tab === 'admin' && !S.ops) S.tab = 'sched';
     $('tab-admin').classList.toggle('hidden', !S.ops);
     $('tabs').querySelectorAll('[data-tab]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === S.tab); });
@@ -536,6 +538,13 @@
       '<div class="row" style="margin-top:8px"><input type="text" id="q" placeholder="이름 찾기" value="' + esc(S.q) + '" style="max-width:200px">' +
       '<label class="small"><input type="checkbox" id="show-retired"' + (S.showRetired ? ' checked' : '') + '> 섬김종료 포함</label>' +
       '<span class="grow"></span>' + (S.ops ? '<button class="btn pri" data-act="mem-new">+ 인원 추가</button>' : '') + '</div></div>';
+    return h + '<div id="roster-list">' + rosterList(all) + '</div>';
+  }
+  // 이름 찾기로 걸러진 명단 (입력 칸은 다시 그리지 않아 한글 조합이 끊기지 않음)
+  function rosterList(all) {
+    all = all || byPartName(sortedMembers());
+    var q = S.q.trim(), h = '';
+    var list = all.filter(function (m) { return (S.showRetired || m.status !== 'retired') && (!q || m.name.indexOf(q) >= 0); });
     PARTS.forEach(function (p) {
       var ms = list.filter(function (m) { return partOf(m.part).key === p.key; });
       if (!ms.length) return;
@@ -1465,7 +1474,7 @@
     else if (act === 'backup') backup();
   });
   document.addEventListener('input', function (ev) {
-    if (ev.target.id === 'q') { S.q = ev.target.value; render(true); }
+    if (ev.target.id === 'q') { S.q = ev.target.value; if ($('roster-list')) $('roster-list').innerHTML = rosterList(); }
   });
   document.addEventListener('keydown', function (ev) {
     var ck = ev.target.getAttribute && ev.target.getAttribute('data-cheer');
