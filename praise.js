@@ -820,33 +820,52 @@
       lastPart = pk;
       return '<div class="q-grp">' + partOf(pk).label + '</div>';
     }
-    modal('<h3>분기 돌아보기 · 배지 수여</h3>' +
-      // 해는 ‹ › 로 넘기고 분기는 버튼으로 (앱의 다른 선택 버튼과 같은 모양)
+    // 단계별 제안 인원 요약
+    var sum = { BLOOM: 0, GROW: 0, BEGIN: 0, CARD: 0 }, given = 0;
+    ids.forEach(function (id) { var o = ev[id]; if (o && sum[o.tier] != null) sum[o.tier]++; if (S.badges[id] && S.badges[id][key]) given++; });
+    // 휴대폰에서는 화면 전체를 쓰는 창: 위(해 · 분기) · 가운데(목록) · 아래(격려의 말 · 저장)를 고정
+    modal('<div class="fs-head"><div class="row" style="flex-wrap:nowrap"><h3 style="margin:0" class="grow">분기 돌아보기</h3><button class="fs-x" id="eq-x" aria-label="닫기">✕</button></div>' +
       '<div class="q-pick">' + yearStep(y, 'eq') +
       '<div class="seg qseg">' + [1, 2, 3, 4].map(function (v) {
         return '<button data-q="' + v + '" class="' + (v === +q ? 'on' : '') + '">' + v + '분기</button>';
       }).join('') + '</div></div>' +
-      '<p class="small muted">참여율 = 실제 수행 A ÷ 약속한 일정 D(배정 − 승인 제외). 동행 ' + TIERS[2][2] + '% · 자람 ' + TIERS[1][2] + '% · 결실 ' + TIERS[0][2] + '% 이상, D가 ' + MIN_SAMPLE + '회 미만이면 감사 카드를 제안합니다(미리 고르지는 않습니다). 제안은 참고이며 수여는 관리자가 정합니다.' +
-      (ended ? '' : '<br><b style="color:var(--bad)">아직 분기가 끝나지 않았습니다. 오늘까지의 기록으로 계산합니다.</b>') + '</p>' +
-      // 사람마다 한 줄: 이름과 기록은 왼쪽, 수여 단계는 오른쪽 (휴대폰에서도 잘리지 않게)
-      (ids.length ? '<div class="q-list">' +
+      '<div class="q-sum"><span>제안</span>' + [['BLOOM', '결실'], ['GROW', '자람'], ['BEGIN', '동행'], ['CARD', '감사 카드']].map(function (x) {
+        return '<b>' + x[1] + ' ' + sum[x[0]] + '</b>';
+      }).join('') + (given ? '<em>수여됨 ' + given + '</em>' : '') + '</div></div>' +
+      '<div class="fs-body">' +
+      (ended ? '' : '<div class="q-warn">아직 분기가 끝나지 않았습니다. 오늘까지의 기록으로 계산합니다.</div>') +
+      '<details class="q-rule"><summary>기준 보기</summary>참여율 = 실제 수행 A ÷ 약속한 일정 D(배정 − 승인 제외). 동행 ' + TIERS[2][2] + '% · 자람 ' + TIERS[1][2] + '% · 결실 ' + TIERS[0][2] + '% 이상, D가 ' + MIN_SAMPLE + '회 미만이면 감사 카드를 제안합니다(미리 고르지는 않습니다). 제안은 참고이며 수여는 총괄지기가 정합니다.</details>' +
+      (ids.length ? '<div class="q-list flat">' +
         ids.map(function (id) {
           var o = ev[id] || { assigned: 0, excused: 0, d: 0, a: 0, rate: 0, tier: '' }, cur = S.badges[id] && S.badges[id][key], val = cur ? cur.code : (o.tier === 'CARD' ? '' : o.tier);
           return partRow(id) + '<div class="q-row"><div class="q-who"><b>' + esc(nameOf(id)) + '</b>' + (cur ? ' <span class="badge title">수여됨</span>' : '') +
-            '<div class="q-nums">배정 ' + o.assigned + (o.excused ? ' · 제외 ' + o.excused : '') + ' · D ' + o.d + ' · A ' + o.a + ' · <b>' + (o.d ? pct(o.rate) : '-') + '</b></div></div>' +
-            '<select data-tier="' + id + '">' +
+            '<div class="q-nums">D ' + o.d + ' · A ' + o.a + (o.excused ? ' · 제외 ' + o.excused : '') + ' · <b>' + (o.d ? pct(o.rate) : '-') + '</b>' +
+            (o.tier ? ' · <span class="q-tip">제안 ' + TIER_LABEL[o.tier] + '</span>' : '') + '</div></div>' +
+            '<select data-tier="' + id + '" data-sheet-title="' + esc(nameOf(id)) + ' 님 ' + q + '분기 배지">' +
             [['', '수여 안 함'], ['CARD', '감사 카드'], ['BEGIN', '동행'], ['GROW', '자람'], ['BLOOM', '결실']].map(function (op) {
               return '<option value="' + op[0] + '"' + (op[0] === val ? ' selected' : '') + '>' + op[1] + (op[0] && op[0] === o.tier ? ' (제안)' : '') + '</option>';
             }).join('') + '</select></div>';
-        }).join('') + '</div>' : '<p class="muted small">이 분기에 배정 기록이 없습니다.</p>') +
-      '<label class="f">격려의 말 <span style="font-weight:500">(이번에 새로 수여하는 사람의 소식에 함께 보입니다)</span></label>' +
-      '<textarea id="eq-note" placeholder="예: 이른 아침 자리를 꾸준히 지켜 주셔서 감사합니다."></textarea>' +
-      '<div class="foot"><button class="btn" id="eq-close">닫기</button><button class="btn gold" id="eq-save">수여 저장</button></div>');
+        }).join('') + '</div>' : '<p class="muted small">이 분기에 배정 기록이 없습니다.</p>') + '</div>' +
+      '<div class="fs-foot"><textarea id="eq-note" rows="2" placeholder="격려의 말 (선택) · 새로 수여하는 사람의 소식에 함께 보입니다"></textarea>' +
+      '<div class="row" style="flex-wrap:nowrap;margin-top:8px"><span class="small muted grow" id="eq-count">바뀐 사람 없음</span><button class="btn" id="eq-close">닫기</button><button class="btn gold" id="eq-save">수여 저장</button></div></div>',
+      'modal', 'full');
     bindYearStep(y, 'eq', function (ny) { evalQuarterModal(ny, q); });
     document.querySelectorAll('#modal [data-q]').forEach(function (b) {
       b.onclick = function () { evalQuarterModal(y, +b.getAttribute('data-q')); };
     });
-    $('eq-close').onclick = function () { closeModal(); };
+    // 바꾼 사람 수를 아래에 바로 보여 줌
+    function countChanges() {
+      var n = 0;
+      document.querySelectorAll('#modal [data-tier]').forEach(function (x) {
+        var cur = S.badges[x.getAttribute('data-tier')] && S.badges[x.getAttribute('data-tier')][key];
+        if ((cur ? cur.code : '') !== x.value) n++;
+      });
+      $('eq-count').textContent = n ? '바뀐 사람 ' + n + '명' : '바뀐 사람 없음';
+      $('eq-count').classList.toggle('muted', !n);
+    }
+    document.querySelectorAll('#modal [data-tier]').forEach(function (x) { x.addEventListener('change', countChanges); });
+    countChanges();
+    $('eq-close').onclick = $('eq-x').onclick = function () { closeModal(); };
     $('eq-save').onclick = function () {
       var up = {}, add = 0, del = 0, note = $('eq-note').value.trim(), by = myName();
       document.querySelectorAll('#modal [data-tier]').forEach(function (x) {
@@ -1196,7 +1215,7 @@
     render(true);
   }
 
-  function modal(html, id) {
+  function modal(html, id, cls) {
     id = id || 'modal';
     // 처음 여는 창이면 뒤로가기로 닫을 수 있게 기록을 하나 남깁니다
     if (!$('modal') && !$('modal2')) history.pushState({ tab: S.tab, modal: true }, '');
@@ -1204,7 +1223,8 @@
     var bg = document.createElement('div');
     bg.className = 'modal-bg'; bg.id = id;
     if (id === 'modal2') bg.style.zIndex = 60;
-    bg.innerHTML = '<div class="modal">' + html + '</div>';
+    if (cls) bg.classList.add(cls);
+    bg.innerHTML = '<div class="modal' + (cls ? ' ' + cls : '') + '">' + html + '</div>';
     document.body.appendChild(bg);
     return bg.firstChild;
   }
