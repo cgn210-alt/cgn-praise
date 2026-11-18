@@ -894,8 +894,9 @@
     });
     h += '</div>';
 
-    h += '<div class="card"><b>자료</b><p class="small muted" style="margin:4px 0 8px">기초자료 파일(찬양팀_기초자료_2026.json)을 불러오면 명단과 예배 기록이 그 내용으로 바뀝니다. 사진 · 배지 · 감사 인사 · 기준은 그대로 둡니다.</p>' +
-      '<div class="row"><label class="btn">기초자료 불러오기<input type="file" id="imp" accept=".json,application/json" class="hidden"></label>' +
+    h += '<div class="card"><b>자료</b><p class="small muted" style="margin:4px 0 8px">명단 변경 파일(찬양팀_명단변경_날짜.json)을 고르면 바뀐 내용을 먼저 보여 주고, 적용하면 그 사람들의 파트 · 상태 · 메모 · 순서만 바뀝니다. ' +
+      '기초자료 파일(찬양팀_기초자료_2026.json)은 명단과 예배 기록 전체를 바꾸므로 처음 한 번만 씁니다. 사진 · 배지 · 감사 인사 · 기준은 어느 쪽이든 그대로 둡니다.</p>' +
+      '<div class="row"><label class="btn">파일 불러오기<input type="file" id="imp" accept=".json,application/json" class="hidden"></label>' +
       '<button class="btn" data-act="backup">전체 백업 내려받기</button></div></div>';
     return h;
   }
@@ -1289,6 +1290,7 @@
     rd.onload = function () {
       var data;
       try { data = JSON.parse(rd.result); } catch (e) { toast('파일을 읽지 못했습니다.'); return; }
+      if (Array.isArray(data.changes)) { rosterChanges(data); return; }
       if (!data.members || !data.events) { toast('기초자료 파일 형식이 아닙니다.'); return; }
       var nm = Object.keys(data.members).length, ne = Object.keys(data.events).length;
       var has = Object.keys(S.members).length || Object.keys(S.events).length;
@@ -1297,6 +1299,50 @@
         .then(function () { toast('불러왔습니다.'); }).catch(fail);
     };
     rd.readAsText(f, 'utf-8');
+  }
+
+  // 명단 변경 파일: 이름으로 찾아 파트 · 상태 · 메모 · 순서만 바꾸고, 없는 이름은 새로 추가합니다.
+  // 사진 · 메일 · 직임 · 예배 기록은 건드리지 않습니다.
+  function rosterChanges(data) {
+    var byName = {}, up = {}, lines = [], orders = 0;
+    Object.keys(S.members).forEach(function (k) { byName[S.members[k].name] = k; });
+    function show(f, v) {
+      if (f === 'part') return partOf(v).label;
+      if (f === 'status') return STATUS[v || 'active'];
+      return v ? '"' + v + '"' : '(없음)';
+    }
+    data.changes.forEach(function (c) {
+      var id = byName[c.name];
+      if (!id) {
+        if (!c.add) { lines.push(c.name + ': 명단에 없어 건너뜀'); return; }
+        var obj = { name: c.name, part: c.part || '', status: c.status || 'active', order: c.order || 0 };
+        if (c.note) obj.note = c.note;
+        up['members/' + db.ref(R + 'members').push().key] = obj;
+        lines.push('새로 추가: ' + c.name + ' (' + partOf(c.part).label + ')');
+        return;
+      }
+      var m = S.members[id], diffs = [];
+      ['part', 'status', 'note', 'order'].forEach(function (f) {
+        if (!(f in c)) return;
+        var nv = c[f] == null || c[f] === '' ? null : c[f], ov = m[f] == null || m[f] === '' ? null : m[f];
+        if (f === 'status' && !ov) ov = 'active';
+        if (nv === ov) return;
+        up['members/' + id + '/' + f] = nv;
+        if (f === 'order') orders++;
+        else diffs.push((f === 'note' ? '메모 ' : '') + show(f, ov) + ' → ' + show(f, nv));
+      });
+      if (diffs.length) lines.push(c.name + ': ' + diffs.join(', '));
+    });
+    if (!Object.keys(up).length) { toast('이미 이 명단과 같습니다.'); return; }
+    modal('<h3>명단 변경 적용</h3><p class="small muted">' + esc(data.source || '') + (data.date ? ' · ' + esc(data.date) : '') +
+      '<br>아래 내용만 바뀝니다. 사진 · 메일 · 직임 · 예배 기록은 그대로입니다.</p>' +
+      '<div class="att-list">' + lines.map(function (l) { return '<div class="row small">' + esc(l) + '</div>'; }).join('') + '</div>' +
+      (orders ? '<p class="small muted">카드 순서 ' + orders + '명도 최종 명단 순서로 맞춥니다.</p>' : '') +
+      '<div class="foot"><button class="btn" id="rc-close">닫기</button><button class="btn pri" id="rc-ok">적용</button></div>');
+    $('rc-close').onclick = function () { closeModal(); };
+    $('rc-ok').onclick = function () {
+      db.ref(R.slice(0, -1)).update(up).then(function () { closeModal(); toast('명단을 바꿨습니다.'); }).catch(fail);
+    };
   }
 
   function backup() {
