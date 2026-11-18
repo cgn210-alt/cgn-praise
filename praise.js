@@ -464,7 +464,8 @@
     var me = myId(), today = todayKey(), ym = S.month;
     var list = Object.keys(S.events).map(function (k) { return Object.assign({ id: k }, S.events[k]); })
       .filter(function (e) { return e.date && e.date.slice(0, 7) === ym; })
-      .sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : (a.id < b.id ? -1 : 1); });
+      // 최근 날짜가 위로
+      .sort(function (a, b) { return a.date > b.date ? -1 : a.date < b.date ? 1 : (a.id < b.id ? -1 : 1); });
     var h = '';
     if (S.notice || S.admin) {
       h += '<div class="notice">' + (S.notice ? esc(S.notice) : '<span class="muted">공지가 없습니다.</span>') +
