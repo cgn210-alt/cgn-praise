@@ -35,7 +35,7 @@
         ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'cgn210@cgnmail.net' || root.child('praise/admins').child(auth.uid).exists())"
       },
       "badges": {
-        ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'cgn210@cgnmail.net' || (root.child('praise/admins').child(auth.uid).exists() && root.child('praise/admins').child(auth.uid).child('role').val() !== 'team'))"
+        ".write": "auth != null && auth.token.email === 'cgn210@cgnmail.net' && auth.token.email_verified === true"
       },
       "issues": {
         ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'cgn210@cgnmail.net' || (root.child('praise/admins').child(auth.uid).exists() && root.child('praise/admins').child(auth.uid).child('role').val() !== 'team'))"

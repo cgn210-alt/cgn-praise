@@ -42,8 +42,8 @@
   var R = 'praise/';
   // 관리자(지기) 단계: 총괄지기는 firebase-config.js 의 MASTER_EMAIL, 나머지는 총괄지기가 관리 탭에서 지정
   var ROLES = {
-    master: ['총괄지기', '최고 관리자', '모든 권한과 지기 지정'],
-    ops: ['운영지기', '총무', '명단 · 사진, 배지 · 감사 인사, 문서 · 인쇄, 기준 · 자료, 예배 담당 · 출석 · 공지'],
+    master: ['총괄지기', '최고 관리자', '모든 권한, 배지 수여, 지기 지정'],
+    ops: ['운영지기', '총무', '명단 · 사진, 감사 인사, 문서 · 인쇄, 기준 · 자료, 예배 담당 · 출석 · 공지'],
     team: ['팀지기', '운영자', '예배 담당 · 출석 체크 · 공지']
   };
   function roleLabel(r) { return ROLES[r] ? ROLES[r][0] + '(' + ROLES[r][1] + ')' : ''; }
@@ -282,7 +282,7 @@
     function wrap(k, inner) { return '<span class="bhit" data-act="badge" data-id="' + id + '|' + k + '">' + inner + '</span>'; }
     [1, 2, 3, 4].forEach(function (q) {
       var k = y + '-Q' + q, slot = '<span class="slot" style="width:' + size + 'px;height:' + size + 'px">' + q + '분기</span>';
-      h += bs[k] ? wrap(k, badgeImg(k, bs[k], size)) : S.ops ? '<span class="bhit" data-act="slot" data-id="' + id + '|' + k + '" title="배지 주기">' + slot + '</span>' : slot;
+      h += bs[k] ? wrap(k, badgeImg(k, bs[k], size)) : S.master ? '<span class="bhit" data-act="slot" data-id="' + id + '|' + k + '" title="배지 주기">' + slot + '</span>' : slot;
     });
     h += '<span class="sep"></span>';
     MILES.concat([['YEAR']]).forEach(function (mi) {
@@ -726,7 +726,7 @@
       '<div class="row" style="margin-top:10px"><select id="b-year" style="width:auto">' + Object.keys(years).sort().map(function (yy) {
         return '<option' + (yy === y ? ' selected' : '') + '>' + yy + '</option>';
       }).join('') + '</select><a class="btn sm" href="guide.html">배지 안내 보기</a><span class="grow"></span>' +
-      (S.ops ? '<button class="btn sm gold" data-act="eval-q">분기 돌아보기 · 배지 수여</button><button class="btn sm" data-act="eval-y">누적 · 연말 배지</button>' : '') + '</div></div>';
+      (S.master ? '<button class="btn sm gold" data-act="eval-q">분기 돌아보기 · 배지 수여</button><button class="btn sm" data-act="eval-y">누적 · 연말 배지</button>' : '') + '</div></div>';
 
     var feed = badgeFeed(15);
     h += '<h2 class="sec">수여 소식</h2>';
@@ -858,8 +858,9 @@
 
   function badgeClick(act, id) {
     var p = id.split('|'), mid = p[0], key = p[1], y = key.slice(0, 4), kind = key.slice(5);
-    if (act === 'slot') { if (S.ops) grantOneModal(mid, y, kind); return; }
-    if (act === 'badge' && S.ops) { grantOneModal(mid, y, kind); return; }
+    // 배지 수여 · 수정 · 취소는 총괄지기만
+    if (act === 'slot') { if (S.master) grantOneModal(mid, y, kind); return; }
+    if (act === 'badge' && S.master) { grantOneModal(mid, y, kind); return; }
     badgeMeaning(mid, key);
   }
   function badgeMeaning(mid, key) {
@@ -879,9 +880,9 @@
       '<p class="small"><b>' + esc(nameOf(mid)) + '</b> 님' + (rec.at ? ' · ' + fullDate(dateKeyOf(rec.at)) + ' 수여' : '') + '</p>' +
       (rec.note ? '<div class="msg small">' + esc(rec.note) + '</div>' : '') +
       '<p class="small muted" style="margin-top:12px">배지는 신앙의 수준을 판정하는 표지가 아니라, 함께한 걸음을 기억하고 감사하는 표시입니다. <a href="guide.html#badges">배지 안내 보기</a></p>' +
-      '<div class="foot">' + (S.ops ? '<button class="btn" id="bm-edit">수정 · 취소</button>' : '') + '<button class="btn pri" id="bm-close">닫기</button></div>');
+      '<div class="foot">' + (S.master ? '<button class="btn" id="bm-edit">수정 · 취소</button>' : '') + '<button class="btn pri" id="bm-close">닫기</button></div>');
     $('bm-close').onclick = function () { closeModal(); };
-    if (S.ops) $('bm-edit').onclick = function () { grantOneModal(mid, key.slice(0, 4), kind); };
+    if (S.master) $('bm-edit').onclick = function () { grantOneModal(mid, key.slice(0, 4), kind); };
   }
 
   // 관리자: 누적 30·60·100회와 연말 완주 배지
@@ -1176,12 +1177,10 @@
       '<div class="tiles" style="margin-top:14px">' +
       '<div class="tile"><div class="k">' + y + '년</div><div class="v">' + (ty.serve + ty.attend) + ' <small>회</small></div><div class="small muted">' + hm(ty.minutes) + (y + '-12-31' >= c.pointStart ? ' · ' + ty.points + '점' : '') + '</div></div>' +
       '<div class="tile"><div class="k">누적</div><div class="v">' + (al.serve + al.attend) + ' <small>회</small></div><div class="small muted">' + hm(al.minutes) + '</div></div></div>' +
-      '<div class="foot">' + (S.ops ? '<button class="btn gold" id="m-badge">배지 주기</button><button class="btn" id="m-edit">편집</button>' : '') + '<button class="btn pri" id="m-close">닫기</button></div>');
+      '<div class="foot">' + (S.master ? '<button class="btn gold" id="m-badge">배지 주기</button>' : '') + (S.ops ? '<button class="btn" id="m-edit">편집</button>' : '') + '<button class="btn pri" id="m-close">닫기</button></div>');
     $('m-close').onclick = function () { closeModal(); };
-    if (S.ops) {
-      $('m-edit').onclick = function () { editMember(id); };
-      $('m-badge').onclick = function () { grantOneModal(id); };
-    }
+    if (S.ops) $('m-edit').onclick = function () { editMember(id); };
+    if (S.master) $('m-badge').onclick = function () { grantOneModal(id); };
   }
 
   function editMember(id) {
@@ -1343,8 +1342,8 @@
     else if (act === 'st-csv') statsCsv();
     else if (act === 'award') { var p = periodRange(); editAward(p, records(tally(p.from, p.to))); }
     else if (act === 's-save') saveSettings();
-    else if (act === 'eval-q') evalQuarterModal();
-    else if (act === 'eval-y') evalYearModal();
+    else if (act === 'eval-q' && S.master) evalQuarterModal();
+    else if (act === 'eval-y' && S.master) evalYearModal();
     else if (act === 'cheer-quick') sendCheer(id, b.getAttribute('data-text'));
     else if (act === 'cheer-send') { var inp = document.querySelector('[data-cheer="' + id + '"]'); sendCheer(id, inp && inp.value); }
     else if (act === 'cheer-del') {
