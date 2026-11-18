@@ -1312,8 +1312,9 @@
       '<label class="btn sm">사진 올리기<input type="file" id="p-file" accept="image/*" class="hidden"></label> ' +
       '<button class="btn sm" id="p-del">사진 빼기</button><div class="small muted" style="margin-top:4px">증명사진 비율(3:4)로 맞춰 저장합니다.</div></div></div>' +
       '<label class="f">이름</label><input type="text" id="p-name" value="' + esc(m.name) + '">' +
-      '<label class="f">직임 <span style="font-weight:500">(비우면 표시 안 함)</span></label><input type="text" id="p-title" list="p-titles" value="' + esc(m.title || '') + '" placeholder="예: 총괄, 총무, 보컬 파트장">' +
-      '<datalist id="p-titles">' + TITLES.map(function (t) { return '<option value="' + t + '">'; }).join('') + '</datalist>' +
+      '<label class="f">직임 <span style="font-weight:500">(아래에서 고르거나 직접 적기 · 비우면 표시 안 함)</span></label><input type="text" id="p-title" value="' + esc(m.title || '') + '" placeholder="예: 총괄, 총무, 보컬 파트장" autocomplete="off">' +
+      // 브라우저 기본 목록 대신 앱 모양의 고르기 버튼
+      '<div class="tchips" id="p-tchips">' + [''].concat(TITLES).map(function (t) { return '<button type="button" class="tchip" data-title="' + esc(t) + '">' + (t ? esc(t) : '없음') + '</button>'; }).join('') + '</div>' +
       '<label class="f">회사 메일 <span style="font-weight:500">(내 기록과 연결)</span></label><input type="email" id="p-email" value="' + esc(m.email || '') + '" placeholder="아이디' + ALLOWED_EMAIL_DOMAIN + '">' +
       '<div class="row"><div class="grow"><label class="f">파트</label><select id="p-part">' + PARTS.map(function (p) {
         return '<option value="' + p.key + '"' + (p.key === (m.part || '') ? ' selected' : '') + '>' + p.label + '</option>';
@@ -1334,6 +1335,18 @@
       $('p-del').disabled = !photo;
     }
     drawPhoto();
+    function markTitle() {
+      var v = $('p-title').value.trim();
+      document.querySelectorAll('#p-tchips .tchip').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-title') === v); });
+    }
+    markTitle();
+    $('p-title').oninput = markTitle;
+    $('p-tchips').onclick = function (ev) {
+      var b = ev.target.closest('.tchip');
+      if (!b) return;
+      $('p-title').value = b.getAttribute('data-title');
+      markTitle();
+    };
     $('p-file').onchange = function () {
       var f = this.files[0];
       this.value = '';
