@@ -238,7 +238,12 @@
   .q-row select { width: auto; flex: none; padding: 5px 8px; font-size: 13.5px; max-width: 46%; }
   table.rank tr.grp td { background: var(--gold-l); color: #84591f; font-weight: 700; font-size: 12.5px; padding: 5px 6px; }
 
-  .copyright { max-width: 960px; margin: 0 auto; padding: 0 16px 28px; text-align: center; font-size: 11.5px; color: #8a8f9c; line-height: 1.6; }
+  /* 아래쪽 저작권: 두 줄로 가운데 정렬, 단어 중간에서 끊지 않음 */
+  .copyright { max-width: 960px; margin: 0 auto; padding: 8px 16px 28px; text-align: center; font-size: 11.5px; color: #8a8f9c; line-height: 1.65; word-break: keep-all; }
+  .copyright .cr-line { width: 36px; height: 2px; border-radius: 2px; background: rgba(200,155,85,0.55); margin: 0 auto 10px; }
+  .copyright b { display: block; font-size: 12px; font-weight: 700; color: #6f7787; letter-spacing: 0.02em; margin-bottom: 2px; }
+  .copyright span { display: inline-block; }
+  .copyright span + span { margin-left: 4px; }
 
   /* 앱 모양의 고르기 칸과 선택 창 */
   .sel-btn { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 38px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: #fff; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
@@ -375,7 +380,7 @@
 </div></nav>
 
 <main id="main"><p class="muted">불러오는 중…</p></main>
-<footer class="copyright">© 2026 EM1 · CGN 찬양팀. 이 앱의 화면 구성, 로고, 배지, 안내 · 인쇄 자료는 허락 없이 복제 · 배포 · 사용할 수 없습니다.</footer>
+<footer class="copyright"><div class="cr-line"></div><b>© 2026 EM1 · CGN 찬양팀</b><span>화면 구성 · 로고 · 배지 · 안내 및 인쇄 자료는</span><span>허락 없이 복제 · 배포 · 사용할 수 없습니다.</span></footer>
 
 <script src="firebase-config.js?v=1"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
