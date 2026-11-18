@@ -26,10 +26,35 @@
   var PERSON = '<svg class="ph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="4.2"/><path d="M3.5 22c0-4.7 3.8-8 8.5-8s8.5 3.3 8.5 8z"/></svg>';
   var R = 'praise/';
 
+  // AM1 배지 (guide.html 과 같은 기준). 분기 참여율 = 실제 수행 A / 개인 평가대상 일정 D
+  var TIERS = [['BLOOM', '결실', 95], ['GROW', '자람', 85], ['BEGIN', '동행', 70]];
+  var TIER_LABEL = { BEGIN: '동행', GROW: '자람', BLOOM: '결실', CARD: '감사 카드' };
+  var QBADGE = {
+    1: { BEGIN: ['AM1-Q1-BEGIN-seed.png', '씨앗'], GROW: ['AM1-Q1-GROW-sprout.png', '새싹'], BLOOM: ['AM1-Q1-BLOOM-tree.png', '나무'] },
+    2: { BEGIN: ['AM1-Q2-BEGIN-lamp.png', '작은 등불'], GROW: ['AM1-Q2-GROW-lamp.png', '풍성한 등불'], BLOOM: ['AM1-Q2-BLOOM-light.png', '빛을 퍼뜨리는 등불'] },
+    3: { BEGIN: ['AM1-Q3-BEGIN-leaf.png', '포도잎'], GROW: ['AM1-Q3-GROW-vine.png', '포도 가지'], BLOOM: ['AM1-Q3-BLOOM-grapes.png', '포도송이'] },
+    4: { BEGIN: ['AM1-Q4-BEGIN-wheat.png', '한 이삭'], GROW: ['AM1-Q4-GROW-sheaf.png', '곡식 단'], BLOOM: ['AM1-Q4-BLOOM-harvest.png', '추수 화환'] }
+  };
+  var MILES = [['M030', 30, 'AM1-MILESTONE-030.png'], ['M060', 60, 'AM1-MILESTONE-060.png'], ['M100', 100, 'AM1-MILESTONE-100.png']];
+  var MIN_SAMPLE = 13;   // D 가 이보다 적으면 정규 배지 대신 시작·복귀 감사 카드
+  var YEAR_RATE = 85;    // 연말 완주: 네 분기 배지 + 연간 85% 이상 + 모든 분기 70% 이상
+  // 인쇄 양식 (print.html) 과 문서함 (docs 폴더)
+  var FORMS = { appreciation: '감사장', letter: '감사 손편지', commendation: '감사표창장' };
+  var DOCS = [
+    ['AM1-01-appreciation.pdf', '감사장', 'A4 세로 · 손글씨용'],
+    ['AM1-02-personal-letter.pdf', '감사 손편지', 'A4 세로 · 손글씨 네 줄'],
+    ['AM1-03-commendation.pdf', '감사표창장', 'A4 세로 · 연말 완주'],
+    ['AM1-print-set-A4.pdf', '감사 인쇄물 세 장 묶음', '감사장 · 손편지 · 표창장'],
+    ['AM1-evaluation-award-forms-A4.pdf', '분기 평가 · 연말 수여 기록 양식', 'A4 가로 2쪽'],
+    ['AM1-detailed-infographic-A4.pdf', '상세 안내 인포그래픽', 'A4 가로 8쪽'],
+    ['AM1-overview-poster-A3.pdf', '요약 포스터', 'A3 세로']
+  ];
+
   var S = {
     user: null, admin: false, master: false,
     members: {}, events: {}, photos: {}, settings: {}, awards: {}, notice: '', users: {}, admins: {},
-    tab: 'sched', month: '', statMode: 'month', statYear: '', statMonth: '', statQ: 1, showRetired: false, q: ''
+    badges: {}, cheers: {}, issues: {},
+    tab: 'sched', month: '', statMode: 'month', statYear: '', statMonth: '', statQ: 1, showRetired: false, q: '', bYear: ''
   };
   var db, auth;
 
@@ -126,7 +151,7 @@
   }
   // 'serve' = 담당으로 섬김, 'attend' = 담당 없이 출석, null = 참여 기록 없음(불참 포함)
   function involvement(ev, id) {
-    if (ev.absent && ev.absent[id]) return null;
+    if ((ev.absent && ev.absent[id]) || (ev.excused && ev.excused[id])) return null;
     if (rolesIn(ev, id).length) return 'serve';
     if (ev.attend && ev.attend[id]) return 'attend';
     return null;
@@ -154,6 +179,93 @@
       });
     });
     return t;
+  }
+
+  // ---------- 배지 평가 ----------
+  function quarterRange(y, q) { return { from: y + '-' + pad(q * 3 - 2) + '-01', to: y + '-' + pad(q * 3) + '-31' }; }
+  function suggestTier(o) {
+    if (!o.d) return '';
+    if (o.d < MIN_SAMPLE) return 'CARD';
+    var p = o.a / o.d * 100;   // 반올림 전 비율로 판정
+    for (var i = 0; i < TIERS.length; i++) if (p >= TIERS[i][2]) return TIERS[i][0];
+    return '';
+  }
+  // 분기 사람별: 배정 / 승인 제외 / 불참 / 실제 수행 A / 평가대상 D (오늘까지 지난 예배)
+  function evalQuarter(y, q) {
+    var r = quarterRange(y, q), out = {};
+    pastEvents(r.from, r.to).forEach(function (ev) {
+      slotIds(ev).forEach(function (id) {
+        var o = out[id] || (out[id] = { assigned: 0, excused: 0, absent: 0, a: 0 });
+        o.assigned++;
+        if (ev.excused && ev.excused[id]) o.excused++;
+        else if (ev.absent && ev.absent[id]) o.absent++;
+        else o.a++;
+      });
+    });
+    Object.keys(out).forEach(function (id) {
+      var o = out[id];
+      o.d = o.assigned - o.excused;
+      o.rate = o.d ? o.a / o.d : 0;
+      o.tier = suggestTier(o);
+    });
+    return out;
+  }
+  // 연간: 실제 섬김 수(누적 배지), 연간 참여율, 분기별 참여율
+  function evalYear(y) {
+    var out = {};
+    [1, 2, 3, 4].forEach(function (q) {
+      var e = evalQuarter(y, q);
+      Object.keys(e).forEach(function (id) {
+        var o = out[id] || (out[id] = { a: 0, d: 0, q: {} });
+        o.a += e[id].a; o.d += e[id].d; o.q[q] = e[id];
+      });
+    });
+    Object.keys(out).forEach(function (id) { var o = out[id]; o.rate = o.d ? o.a / o.d : 0; });
+    return out;
+  }
+  function pct(v) { return (Math.floor(v * 1000) / 10).toFixed(1) + '%'; }
+  // 배지 기록 하나의 그림과 이름 (key 예: 2027-Q1, 2027-M030, 2027-YEAR)
+  function badgeInfo(key, rec) {
+    var y = key.slice(0, 4), part = key.slice(5), code = rec && rec.code;
+    if (part.charAt(0) === 'Q') {
+      var q = +part.slice(1);
+      if (code === 'CARD') return { img: '', title: y + '년 ' + q + '분기 감사 카드', sub: '시작 · 복귀 감사' };
+      var b = QBADGE[q] && QBADGE[q][code];
+      return { img: b ? 'badges/' + b[0] : '', title: y + '년 ' + q + '분기 ' + (TIER_LABEL[code] || ''), sub: b ? b[1] : '' };
+    }
+    for (var i = 0; i < MILES.length; i++) if (MILES[i][0] === part) return { img: 'badges/' + MILES[i][2], title: y + '년 누적 ' + MILES[i][1] + '회 기념', sub: '실제 섬김 ' + MILES[i][1] + '회' };
+    if (part === 'YEAR') return { img: 'badges/AM1-YEAR-TOGETHER.png', title: y + '년 한 해 함께 완주', sub: '네 분기 배지 · 연간 ' + YEAR_RATE + '% 이상' };
+    return { img: '', title: key, sub: '' };
+  }
+  function badgeImg(key, rec, size) {
+    var bi = badgeInfo(key, rec), st = 'width:' + size + 'px;height:' + size + 'px';
+    if (!bi.img) return '<span class="bimg card" style="' + st + ';font-size:' + Math.max(9, size / 4) + 'px" title="' + esc(bi.title) + '">감사</span>';
+    return '<img class="bimg" src="' + bi.img + '" style="' + st + '" alt="' + esc(bi.title) + '" title="' + esc(bi.title + (bi.sub ? ' · ' + bi.sub : '')) + '">';
+  }
+  // 다른 사람에게 보여도 되는 배지 (본인이 원하지 않으면 관리자가 '배지 비공개'로 바꿉니다)
+  function visibleBadges(id) {
+    var m = S.members[id];
+    if (m && m.hideBadges && !S.admin && id !== myId()) return {};
+    return S.badges[id] || {};
+  }
+  function yearsOf(bs) {
+    var ys = {};
+    Object.keys(bs).forEach(function (k) { ys[k.slice(0, 4)] = 1; });
+    return Object.keys(ys).sort();
+  }
+  // 한 해의 배지 수집판: 분기 4칸 + 누적 3칸 + 연말 1칸
+  function collection(id, y, size) {
+    var bs = visibleBadges(id), h = '<div class="coll">';
+    [1, 2, 3, 4].forEach(function (q) {
+      var k = y + '-Q' + q;
+      h += bs[k] ? badgeImg(k, bs[k], size) : '<span class="slot" style="width:' + size + 'px;height:' + size + 'px">' + q + '분기</span>';
+    });
+    h += '<span class="sep"></span>';
+    MILES.concat([['YEAR']]).forEach(function (mi) {
+      var k = y + '-' + mi[0];
+      if (bs[k]) h += badgeImg(k, bs[k], Math.round(size * 0.8));
+    });
+    return h + '</div>';
   }
 
   // ---------- 로그인 ----------
@@ -283,7 +395,8 @@
       render(true);
     });
 
-    ['members', 'events', 'photos', 'awards', 'users', 'admins', 'settings'].forEach(function (k) {
+    S.bYear = t.slice(0, 4);
+    ['members', 'events', 'photos', 'awards', 'users', 'admins', 'settings', 'badges', 'cheers', 'issues'].forEach(function (k) {
       db.ref(R + k).on('value', function (snap) {
         S[k] = snap.val() || {};
         if (k === 'admins') S.admin = S.master || !!S.admins[u.uid];
@@ -303,12 +416,13 @@
   function render(force) {
     var main = $('main'), act = document.activeElement;
     // 관리 탭에서 입력 중이면 다른 사람 변경으로 입력값이 지워지지 않게 기다립니다
-    if (!force && S.tab === 'admin' && act && main.contains(act) && /INPUT|SELECT|TEXTAREA/.test(act.tagName)) return;
+    if (!force && (S.tab === 'admin' || S.tab === 'badges') && act && main.contains(act) && /INPUT|SELECT|TEXTAREA/.test(act.tagName)) return;
     if (S.tab === 'admin' && !S.admin) S.tab = 'sched';
     $('tab-admin').classList.toggle('hidden', !S.admin);
     $('tabs').querySelectorAll('[data-tab]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === S.tab); });
     var focusId = act && act.id, sel = focusId === 'q' ? act.selectionStart : null;
-    main.innerHTML = ({ sched: renderSched, roster: renderRoster, stats: renderStats, mine: renderMine, admin: renderAdmin })[S.tab]();
+    var view = { sched: renderSched, roster: renderRoster, stats: renderStats, badges: renderBadges, mine: renderMine, admin: renderAdmin }[S.tab] || renderSched;
+    main.innerHTML = view();
     if (focusId === 'q' && $('q')) { $('q').focus(); $('q').setSelectionRange(sel, sel); }
   }
 
@@ -340,7 +454,7 @@
       var ids = arr(e.slots && e.slots[s[0]]);
       if (!ids.length) return;
       rows += '<div class="lb">' + s[1] + '</div><div class="chips">' +
-        ids.map(function (id) { return chip(id, me, e.absent && e.absent[id]); }).join('') + '</div>';
+        ids.map(function (id) { return chip(id, me, (e.absent && e.absent[id]) || (e.excused && e.excused[id])); }).join('') + '</div>';
     });
     var att = Object.keys(e.attend || {}).filter(function (id) { return e.attend[id] && !rolesIn(e, id).length; });
     if (att.length) rows += '<div class="lb">출석</div><div class="chips">' + att.map(function (id) { return chip(id, me); }).join('') + '</div>';
@@ -376,10 +490,15 @@
   function memCard(m) {
     var st = m.status || 'active';
     var extra = Object.keys(m.roles || {}).filter(function (k) { return m.roles[k]; }).map(slotLabel).join('·');
+    // 배지가 있는 가장 최근 해의 배지를 이름 아래 작게 표시
+    var bs = visibleBadges(m.id), ys = yearsOf(bs), ly = ys[ys.length - 1];
+    var icons = ly ? Object.keys(bs).filter(function (k) { return k.slice(0, 4) === ly; }).sort()
+      .map(function (k) { return badgeImg(k, bs[k], 20); }).join('') : '';
     return '<div class="mem' + (st !== 'active' && st !== 'guest' ? ' off' : '') + '" data-act="mem" data-id="' + m.id + '">' + photoBox(m.id) +
       '<div class="nm">' + esc(m.name) + '</div><div class="meta">' +
       (m.title ? '<span class="badge title">' + esc(m.title) + '</span> ' : '') +
-      (st !== 'active' ? '<span class="badge ' + st + '">' + STATUS[st] + '</span> ' : '') + (extra ? '+' + esc(extra) : '') + '</div></div>';
+      (st !== 'active' ? '<span class="badge ' + st + '">' + STATUS[st] + '</span> ' : '') + (extra ? '+' + esc(extra) : '') + '</div>' +
+      (icons ? '<div class="mini-b" title="' + ly + '년 배지">' + icons + '</div>' : '') + '</div>';
   }
 
   // ----- 통계 · 결산 -----
@@ -392,24 +511,19 @@
     }
     return { key: y + '-' + S.statMonth, label: y + '년 ' + (+S.statMonth) + '월', from: y + '-' + S.statMonth + '-01', to: y + '-' + S.statMonth + '-31' };
   }
-  function ranking(t, usePoints) {
+  function records(t) {
     var rows = Object.keys(t).map(function (id) {
       var r = t[id];
       return { id: id, serve: r.serve, attend: r.attend, total: r.serve + r.attend, minutes: r.minutes, points: r.points };
     });
-    rows.sort(function (a, b) {
-      return (usePoints ? b.points - a.points : 0) || (b.total - a.total) || (b.minutes - a.minutes) || (nameOf(a.id) < nameOf(b.id) ? -1 : 1);
-    });
-    rows.forEach(function (r, i) {
-      var p = rows[i - 1];
-      r.rank = p && (usePoints ? p.points === r.points : true) && p.total === r.total ? p.rank : i + 1;
-    });
+    // 순위를 매기지 않고 가나다순으로 (guide.html: 순위표는 쓰지 않습니다)
+    rows.sort(function (a, b) { return nameOf(a.id).localeCompare(nameOf(b.id), 'ko'); });
     return rows;
   }
   function renderStats() {
     var p = periodRange(), c = cfg(), t = tally(p.from, p.to), evs = pastEvents(p.from, p.to);
     var usePoints = p.to >= c.pointStart;
-    var rows = ranking(t, usePoints);
+    var rows = records(t);
     var years = {}; years[todayKey().slice(0, 4)] = 1; years[c.pointStart.slice(0, 4)] = 1;
     Object.keys(S.events).forEach(function (k) { if (S.events[k].date) years[S.events[k].date.slice(0, 4)] = 1; });
     var h = '<div class="card"><div class="row">' +
@@ -447,13 +561,13 @@
 
     h += awardCard(p, rows);
 
-    h += '<div class="card"><b>' + p.label + ' 섬김 순위</b>';
+    h += '<div class="card"><b>' + p.label + ' 함께한 기록</b> <span class="small muted">가나다순</span>';
     if (!rows.length) h += '<p class="muted small">기록이 없습니다.</p>';
     else {
-      h += '<div class="tbl-wrap"><table class="rank"><thead><tr><th>순위</th><th class="l">이름</th><th class="l">파트</th><th>섬김</th><th>출석</th><th>시간</th>' + (usePoints ? '<th>포인트</th>' : '') + '</tr></thead><tbody>' +
+      h += '<div class="tbl-wrap"><table class="rank"><thead><tr><th class="l">이름</th><th class="l">파트</th><th>섬김</th><th>출석</th><th>시간</th>' + (usePoints ? '<th>포인트</th>' : '') + '</tr></thead><tbody>' +
         rows.map(function (r) {
           var m = S.members[r.id] || {};
-          return '<tr class="' + (r.rank <= 3 ? 'top' : '') + '"><td>' + r.rank + '</td><td class="l"><span class="row" style="gap:6px;flex-wrap:nowrap">' + avatar(r.id, 24) + esc(nameOf(r.id)) + '</span></td>' +
+          return '<tr><td class="l"><span class="row" style="gap:6px;flex-wrap:nowrap">' + avatar(r.id, 24) + esc(nameOf(r.id)) + '</span></td>' +
             '<td class="l muted">' + partOf(m.part).label + '</td><td>' + r.serve + '</td><td>' + r.attend + '</td><td>' + hm(r.minutes) + '</td>' +
             (usePoints ? '<td><b>' + r.points + '</b></td>' : '') + '</tr>';
         }).join('') + '</tbody></table></div>';
@@ -475,7 +589,7 @@
     if (!a && !S.admin) return '';
     var h = '<div class="card award"><div class="row"><b>' + p.label + ' 우수 스텝</b><span class="grow"></span>' +
       (S.admin ? '<button class="btn sm gold" data-act="award">' + (a ? '수정' : '선정하기') + '</button>' : '') + '</div>';
-    if (!a) return h + '<p class="small muted" style="margin:6px 0 0">아직 선정하지 않았습니다. 아래 순위를 참고해 선정할 수 있습니다.</p></div>';
+    if (!a) return h + '<p class="small muted" style="margin:6px 0 0">아직 선정하지 않았습니다. 아래 기록을 참고해 선정할 수 있습니다.</p></div>';
     h += '<div class="who">' + Object.keys(a.winners || {}).map(function (id) {
       return '<div>' + photoBox(id) + esc(nameOf(id)) + '</div>';
     }).join('') + '</div>';
@@ -500,6 +614,21 @@
       '<h2 style="margin:0">' + esc(m.name) + '</h2><div class="muted">' + (m.title ? esc(m.title) + ' · ' : '') + partOf(m.part).label + ' · ' + STATUS[m.status || 'active'] + '</div>' +
       (yr ? '<p class="small" style="margin:8px 0 0">올해 ' + (yr.serve + yr.attend) + '번 예배의 자리를 함께 지켜 주셨습니다. 수고에 감사드립니다.</p>' : '') +
       '</div></div></div>';
+    // 내 배지: 올해 수집판과 이번 분기 진행 (압박이 아니라 돌아보기용)
+    var cq = Math.ceil(+mo / 3), eq = evalQuarter(y, cq)[id], myB = S.badges[id] || {};
+    h += '<div class="card mybadge"><div class="row"><b>' + y + '년 내 배지</b><span class="grow"></span><a class="small" href="guide.html">배지 안내</a></div>' + collection(id, y, 48) +
+      '<div class="small" style="margin-top:8px">' + (eq ? cq + '분기 지금까지 담당 ' + eq.assigned + '회 중 ' + eq.a + '회 섬김' + (eq.excused ? ' · 승인 제외 ' + eq.excused + '회' : '') +
+        (eq.d ? ' · 참여율 ' + pct(eq.rate) : '') : cq + '분기 담당 기록이 아직 없습니다.') + '</div>' +
+      '<div class="small muted">분기가 끝나면 담당자 확인을 거쳐 배지가 수여됩니다. 기록이 다르면 7일 안에 관리자에게 알려 주세요.' + (m.hideBadges ? ' 지금은 배지 비공개로 되어 있습니다.' : '') + '</div></div>';
+    var bkeys = Object.keys(myB).sort().reverse();
+    if (bkeys.length) {
+      h += '<div class="card"><b>받은 배지와 축하</b>' + bkeys.map(function (k) {
+        var bi = badgeInfo(k, myB[k]);
+        return '<div class="row" style="flex-wrap:nowrap;align-items:flex-start;gap:10px;margin-top:12px">' + badgeImg(k, myB[k], 44) +
+          '<div class="grow" style="min-width:0"><b>' + esc(bi.title) + '</b> <span class="small muted">' + esc(bi.sub) + '</span>' +
+          (myB[k].note ? '<div class="msg small">' + esc(myB[k].note) + '</div>' : '') + cheerBlock(id, k) + '</div></div>';
+      }).join('') + '</div>';
+    }
     h += '<div class="tiles">' + box(+mo + '월', y + '-' + mo + '-01', y + '-' + mo + '-31') +
       box(q + '분기', y + '-' + pad(q * 3 - 2) + '-01', y + '-' + pad(q * 3) + '-31') +
       box(y + '년', y + '-01-01', y + '-12-31') + box('누적', '0000-00-00', '9999-12-31') + '</div>';
@@ -522,6 +651,210 @@
     return h;
   }
 
+  // ----- 배지 -----
+  function dateKeyOf(ms) { var d = new Date(ms); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function badgeFeed(limit) {
+    var list = [];
+    Object.keys(S.badges).forEach(function (id) {
+      var bs = visibleBadges(id);
+      Object.keys(bs).forEach(function (k) { list.push({ id: id, key: k, rec: bs[k] }); });
+    });
+    return list.sort(function (a, b) { return (b.rec.at || 0) - (a.rec.at || 0); }).slice(0, limit);
+  }
+  function cheerKey(id, key) { return id + '_' + key; }
+  function myName() { var me = myId(); return me ? S.members[me].name : (S.user.displayName || S.user.email.split('@')[0]); }
+  // 배지마다 팀원이 남기는 축하 · 응원 한 줄 (받은 사람은 읽기만)
+  function cheerBlock(id, key) {
+    var ck = cheerKey(id, key), cs = S.cheers[ck] || {}, uid = S.user.uid;
+    var list = Object.keys(cs).map(function (u) { return Object.assign({ uid: u }, cs[u]); })
+      .sort(function (a, b) { return (a.at || 0) - (b.at || 0); });
+    var h = '<div class="cheers">';
+    list.forEach(function (c) {
+      h += '<div class="cheer"><b>' + esc(c.name || '팀원') + '</b> ' + esc(c.text) +
+        (c.uid === uid || S.admin ? ' <x data-act="cheer-del" data-id="' + ck + '|' + c.uid + '" title="지우기">✕</x>' : '') + '</div>';
+    });
+    if (id !== myId()) {
+      h += '<div class="cheer-in">' + ['축하해요', '수고 많으셨어요', '함께해서 감사해요'].map(function (t) {
+        return '<button class="btn sm" data-act="cheer-quick" data-id="' + ck + '" data-text="' + t + '">' + t + '</button>';
+      }).join('') + '<span class="cheer-own"><input type="text" maxlength="100" placeholder="직접 쓰기" data-cheer="' + ck + '">' +
+        '<button class="btn sm pri" data-act="cheer-send" data-id="' + ck + '">남기기</button></span></div>';
+    }
+    return h + '</div>';
+  }
+  function sendCheer(ck, text) {
+    text = (text || '').trim();
+    if (!text) { toast('한 줄을 적어 주세요.'); return; }
+    db.ref(R + 'cheers/' + ck + '/' + S.user.uid).set({ name: myName(), text: text.slice(0, 100), at: Date.now() })
+      .then(function () { toast('축하를 남겼습니다.'); }).catch(fail);
+  }
+  function renderBadges() {
+    var y = S.bYear, years = {}, me = myId();
+    years[todayKey().slice(0, 4)] = 1; years[cfg().pointStart.slice(0, 4)] = 1; years[y] = 1;
+    Object.keys(S.badges).forEach(function (id) { yearsOf(S.badges[id]).forEach(function (yy) { years[yy] = 1; }); });
+    var h = '<div class="card hero"><div class="row" style="flex-wrap:nowrap;gap:14px"><img src="amone-logo.png" alt="AM1" class="hero-logo">' +
+      '<div class="grow"><b>함께 자라는 예배자</b><div class="small muted">약속한 섬김의 꾸준함을 함께 기억하고 축하합니다. 배지는 신앙의 수준을 판정하는 표지가 아닙니다.</div></div></div>' +
+      '<div class="row" style="margin-top:10px"><select id="b-year" style="width:auto">' + Object.keys(years).sort().map(function (yy) {
+        return '<option' + (yy === y ? ' selected' : '') + '>' + yy + '</option>';
+      }).join('') + '</select><a class="btn sm" href="guide.html">배지 안내 보기</a><span class="grow"></span>' +
+      (S.admin ? '<button class="btn sm gold" data-act="eval-q">분기 평가 · 수여</button><button class="btn sm" data-act="eval-y">누적 · 연말 배지</button>' : '') + '</div></div>';
+
+    var feed = badgeFeed(15);
+    h += '<h2 class="sec">수여 소식</h2>';
+    if (!feed.length) h += '<div class="card muted small">아직 수여된 배지가 없습니다. 분기 평가가 끝나면 이곳에서 함께 축하합니다.</div>';
+    feed.forEach(function (f) {
+      var bi = badgeInfo(f.key, f.rec);
+      h += '<div class="card feed"><div class="row" style="flex-wrap:nowrap;align-items:flex-start;gap:12px">' + badgeImg(f.key, f.rec, 64) +
+        '<div class="grow" style="min-width:0"><div><b>' + esc(nameOf(f.id)) + '</b> 님 · ' + esc(bi.title) + '</div>' +
+        '<div class="small muted">' + esc(bi.sub) + (f.rec.at ? ' · ' + fullDate(dateKeyOf(f.rec.at)) : '') + '</div>' +
+        (f.rec.note ? '<div class="msg small">' + esc(f.rec.note) + '</div>' : '') + cheerBlock(f.id, f.key) + '</div></div></div>';
+    });
+
+    h += '<h2 class="sec">' + y + '년 배지 수집판 <span class="small muted" style="font-weight:500">파트 순서</span></h2><div class="board">';
+    sortedMembers().forEach(function (m) {
+      var mine = Object.keys(visibleBadges(m.id)).filter(function (k) { return k.slice(0, 4) === y; });
+      if (!mine.length && (m.status || 'active') !== 'active') return;
+      if (m.hideBadges && !S.admin && m.id !== me) return;
+      h += '<div class="bcard' + (m.id === me ? ' me' : '') + '" data-act="mem" data-id="' + m.id + '"><div class="row" style="flex-wrap:nowrap;gap:8px">' + avatar(m.id, 30) +
+        '<b class="grow">' + esc(m.name) + '</b>' + (m.hideBadges ? '<span class="badge retired">비공개</span>' : '') + '</div>' + collection(m.id, y, 34) + '</div>';
+    });
+    return h + '</div>';
+  }
+
+  // 관리자: 분기 평가와 수여
+  function lastQuarter() {
+    var t = todayKey(), cq = Math.ceil(+t.slice(5, 7) / 3), y = +t.slice(0, 4);
+    return cq === 1 ? [String(y - 1), 4] : [String(y), cq - 1];
+  }
+  function yearChoices(y) {
+    var ys = [];
+    for (var yy = +cfg().pointStart.slice(0, 4) - 1; yy <= +todayKey().slice(0, 4) + 1; yy++) ys.push(String(yy));
+    if (ys.indexOf(y) < 0) ys.push(y);
+    return ys.sort();
+  }
+  function evalQuarterModal(y, q) {
+    if (!y) { var lq = lastQuarter(); y = lq[0]; q = lq[1]; }
+    var key = y + '-Q' + q, ev = evalQuarter(y, q), rg = quarterRange(y, q), ended = rg.to < todayKey();
+    var ids = Object.keys(ev);
+    Object.keys(S.badges).forEach(function (id) { if (S.badges[id][key] && ids.indexOf(id) < 0) ids.push(id); });
+    var order = sortedMembers().map(function (m) { return m.id; });
+    ids.sort(function (a, b) { return order.indexOf(a) - order.indexOf(b); });
+    modal('<h3>분기 평가 · 배지 수여</h3>' +
+      '<div class="row"><select id="eq-y" style="width:auto">' + yearChoices(y).map(function (v) { return '<option' + (v === y ? ' selected' : '') + '>' + v + '</option>'; }).join('') + '</select>' +
+      '<select id="eq-q" style="width:auto">' + [1, 2, 3, 4].map(function (v) { return '<option value="' + v + '"' + (v === +q ? ' selected' : '') + '>' + v + '분기</option>'; }).join('') + '</select></div>' +
+      '<p class="small muted">참여율 = 실제 수행 A ÷ 평가대상 D(배정 − 승인 제외). 동행 ' + TIERS[2][2] + '% · 자람 ' + TIERS[1][2] + '% · 결실 ' + TIERS[0][2] + '% 이상, D가 ' + MIN_SAMPLE + '회 미만이면 감사 카드를 제안합니다. 제안은 참고이며 수여는 관리자가 정합니다.' +
+      (ended ? '' : '<br><b style="color:var(--bad)">아직 분기가 끝나지 않았습니다. 오늘까지의 기록으로 계산합니다.</b>') + '</p>' +
+      (ids.length ? '<div class="tbl-wrap"><table class="rank"><thead><tr><th class="l">이름</th><th>배정</th><th>제외</th><th>D</th><th>A</th><th>참여율</th><th class="l">수여</th></tr></thead><tbody>' +
+        ids.map(function (id) {
+          var o = ev[id] || { assigned: 0, excused: 0, d: 0, a: 0, rate: 0, tier: '' }, cur = S.badges[id] && S.badges[id][key], val = cur ? cur.code : o.tier;
+          return '<tr><td class="l">' + esc(nameOf(id)) + (cur ? ' <span class="badge title">수여됨</span>' : '') + '</td><td>' + o.assigned + '</td><td>' + o.excused + '</td><td>' + o.d + '</td><td>' + o.a + '</td>' +
+            '<td>' + (o.d ? pct(o.rate) : '-') + '</td><td class="l"><select data-tier="' + id + '" style="width:auto;padding:3px 6px">' +
+            [['', '수여 안 함'], ['CARD', '감사 카드'], ['BEGIN', '동행'], ['GROW', '자람'], ['BLOOM', '결실']].map(function (op) {
+              return '<option value="' + op[0] + '"' + (op[0] === val ? ' selected' : '') + '>' + op[1] + (op[0] && op[0] === o.tier ? ' (제안)' : '') + '</option>';
+            }).join('') + '</select></td></tr>';
+        }).join('') + '</tbody></table></div>' : '<p class="muted small">이 분기에 배정 기록이 없습니다.</p>') +
+      '<label class="f">격려의 말 <span style="font-weight:500">(이번에 새로 수여하는 사람의 소식에 함께 보입니다)</span></label>' +
+      '<textarea id="eq-note" placeholder="예: 이른 아침 자리를 꾸준히 지켜 주셔서 감사합니다."></textarea>' +
+      '<div class="foot"><button class="btn" id="eq-close">닫기</button><button class="btn gold" id="eq-save">수여 저장</button></div>');
+    $('eq-y').onchange = $('eq-q').onchange = function () { evalQuarterModal($('eq-y').value, +$('eq-q').value); };
+    $('eq-close').onclick = function () { closeModal(); };
+    $('eq-save').onclick = function () {
+      var up = {}, add = 0, del = 0, note = $('eq-note').value.trim(), by = myName();
+      document.querySelectorAll('#modal [data-tier]').forEach(function (x) {
+        var id = x.getAttribute('data-tier'), cur = S.badges[id] && S.badges[id][key], o = ev[id] || {};
+        if (!x.value && cur) { up['badges/' + id + '/' + key] = null; del++; }
+        else if (x.value && (!cur || cur.code !== x.value)) {
+          var rec = { code: x.value, a: o.a || 0, d: o.d || 0, at: Date.now(), by: by };
+          if (note) rec.note = note;
+          up['badges/' + id + '/' + key] = rec; add++;
+        }
+      });
+      if (!add && !del) { toast('바뀐 것이 없습니다.'); return; }
+      if (!confirm(y + '년 ' + q + '분기: 새로 수여 ' + add + '명' + (del ? ', 수여 취소 ' + del + '명' : '') + '\n저장할까요?')) return;
+      db.ref(R.slice(0, -1)).update(up).then(function () { closeModal(); toast('배지를 저장했습니다.'); }).catch(fail);
+    };
+  }
+
+  // 관리자: 누적 30·60·100회와 연말 완주 배지
+  function evalYearModal(y) {
+    y = y || todayKey().slice(0, 4);
+    var ev = evalYear(y), ids = Object.keys(ev);
+    MILES.concat([['YEAR']]).forEach(function (mi) {
+      Object.keys(S.badges).forEach(function (id) { if (S.badges[id][y + '-' + mi[0]] && ids.indexOf(id) < 0) ids.push(id); });
+    });
+    var order = sortedMembers().map(function (m) { return m.id; });
+    ids.sort(function (a, b) { return order.indexOf(a) - order.indexOf(b); });
+    function yearOk(id) {
+      var o = ev[id], bs = S.badges[id] || {};
+      if (!o || !o.d) return false;
+      for (var q = 1; q <= 4; q++) {
+        var b = bs[y + '-Q' + q], oq = o.q[q];
+        if (!b || b.code === 'CARD' || !oq || !oq.d || oq.a / oq.d < 0.7) return false;
+      }
+      return o.rate * 100 >= YEAR_RATE;
+    }
+    modal('<h3>누적 · 연말 배지</h3>' +
+      '<div class="row"><select id="ey-y" style="width:auto">' + yearChoices(y).map(function (v) { return '<option' + (v === y ? ' selected' : '') + '>' + v + '</option>'; }).join('') + '</select></div>' +
+      '<p class="small muted">누적 배지는 그해 실제 섬김(승인 제외 미포함) 30 · 60 · 100회, 연말 완주는 네 분기 배지와 연간 참여율 ' + YEAR_RATE + '% 이상, 모든 분기 70% 이상입니다. 기준을 채운 칸은 금색으로 표시합니다.</p>' +
+      (ids.length ? '<div class="tbl-wrap"><table class="rank"><thead><tr><th class="l">이름</th><th>실제 섬김</th><th>연간</th><th>30</th><th>60</th><th>100</th><th>완주</th></tr></thead><tbody>' +
+        ids.map(function (id) {
+          var o = ev[id] || { a: 0, d: 0, rate: 0 }, bs = S.badges[id] || {};
+          function box(code, ok) {
+            return '<td class="' + (ok ? 'ok-cell' : '') + '"><input type="checkbox" data-ms="' + id + '|' + code + '"' + (bs[y + '-' + code] ? ' checked' : '') + '></td>';
+          }
+          return '<tr><td class="l">' + esc(nameOf(id)) + '</td><td>' + o.a + '</td><td>' + (o.d ? pct(o.rate) : '-') + '</td>' +
+            MILES.map(function (mi) { return box(mi[0], o.a >= mi[1]); }).join('') + box('YEAR', yearOk(id)) + '</tr>';
+        }).join('') + '</tbody></table></div>' : '<p class="muted small">이 해에 섬김 기록이 없습니다.</p>') +
+      '<label class="f">격려의 말</label><textarea id="ey-note" placeholder="예: 한 해 동안 함께 걸어 주셔서 감사합니다."></textarea>' +
+      '<div class="foot"><button class="btn" id="ey-close">닫기</button><button class="btn gold" id="ey-save">저장</button></div>');
+    $('ey-y').onchange = function () { evalYearModal($('ey-y').value); };
+    $('ey-close').onclick = function () { closeModal(); };
+    $('ey-save').onclick = function () {
+      var up = {}, n = 0, note = $('ey-note').value.trim(), by = myName();
+      document.querySelectorAll('#modal [data-ms]').forEach(function (x) {
+        var p = x.getAttribute('data-ms').split('|'), k = y + '-' + p[1], has = S.badges[p[0]] && S.badges[p[0]][k];
+        if (x.checked && !has) {
+          var rec = { code: p[1], a: (ev[p[0]] || {}).a || 0, at: Date.now(), by: by };
+          if (note) rec.note = note;
+          up['badges/' + p[0] + '/' + k] = rec; n++;
+        }
+        if (!x.checked && has) { up['badges/' + p[0] + '/' + k] = null; n++; }
+      });
+      if (!n) { toast('바뀐 것이 없습니다.'); return; }
+      db.ref(R.slice(0, -1)).update(up).then(function () { closeModal(); toast('저장했습니다.'); }).catch(fail);
+    };
+  }
+
+  // 관리자: 감사장 · 손편지 · 표창장 맞춤 인쇄 (print.html 에서 열림)
+  function koDate(key) { return key.slice(0, 4) + '년 ' + (+key.slice(5, 7)) + '월 ' + (+key.slice(8)) + '일'; }
+  function printPanel() {
+    var s = S.settings || {}, list = sortedMembers().filter(function (m) { return m.status !== 'retired'; });
+    return '<div class="card"><b>맞춤 인쇄</b><p class="small muted" style="margin:4px 0 0">이름 · 역할 · 날짜를 채운 양식을 새 창에 엽니다. 새 창에서 글자를 눌러 더 고친 뒤 인쇄하면 됩니다(A4 세로, 배율 100%, 여백 없음, 머리글 · 바닥글 끄기).</p>' +
+      '<div class="row"><div class="grow"><label class="f">양식</label><select id="pr-type">' + Object.keys(FORMS).map(function (k) { return '<option value="' + k + '">' + FORMS[k] + '</option>'; }).join('') + '</select></div>' +
+      '<div class="grow"><label class="f">받는 사람</label><select id="pr-mem"><option value="">(빈칸으로)</option>' + list.map(function (m) {
+        return '<option value="' + m.id + '">' + esc(m.name) + ' · ' + partOf(m.part).label + '</option>';
+      }).join('') + '</select></div></div>' +
+      '<div class="row"><div class="grow"><label class="f">섬김 부서 / 역할</label><input type="text" id="pr-role" placeholder="받는 사람을 고르면 파트가 들어갑니다"></div>' +
+      '<div class="grow"><label class="f">표창 부문 (표창장)</label><input type="text" id="pr-award" value="함께 완주상"></div></div>' +
+      '<div class="row"><div class="grow"><label class="f">날짜</label><input type="date" id="pr-date" value="' + todayKey() + '"></div>' +
+      '<div class="grow"><label class="f">수여기관</label><input type="text" id="pr-org" value="' + esc(s.printOrg || '') + '"></div>' +
+      '<div class="grow"><label class="f">대표 / 담당자</label><input type="text" id="pr-signer" value="' + esc(s.printSigner || '') + '"></div></div>' +
+      '<label class="small" style="display:block;margin-top:8px"><input type="checkbox" id="pr-log" checked> 지급 기록에 남기기</label>' +
+      '<div class="foot" style="justify-content:flex-start"><button class="btn pri" data-act="print-open">인쇄 화면 열기</button></div></div>';
+  }
+  function openPrint() {
+    var mid = $('pr-mem').value, m = S.members[mid], type = $('pr-type').value, date = $('pr-date').value || todayKey();
+    var data = { type: type, name: m ? m.name : '', role: $('pr-role').value.trim(), award: $('pr-award').value.trim(), date: koDate(date), org: $('pr-org').value.trim(), signer: $('pr-signer').value.trim() };
+    try { localStorage.setItem('am1-print', JSON.stringify(data)); } catch (e) {}
+    window.open('print.html', '_blank');
+    var ss = S.settings || {};
+    if ((ss.printOrg || '') !== data.org || (ss.printSigner || '') !== data.signer) db.ref(R + 'settings').update({ printOrg: data.org || null, printSigner: data.signer || null }).catch(function () {});
+    if ($('pr-log').checked && m) {
+      var rec = { memberId: mid, doc: type, date: date, at: Date.now(), by: myName() };
+      if (type === 'commendation' && data.award) rec.award = data.award;
+      db.ref(R + 'issues').push(rec).then(function () { toast('지급 기록에 남겼습니다.'); }).catch(fail);
+    }
+  }
+
   // ----- 관리 -----
   function renderAdmin() {
     var c = cfg();
@@ -535,7 +868,19 @@
       }).join('') + '</div>' +
       '<div class="foot" style="justify-content:flex-start"><button class="btn pri" data-act="s-save">기준 저장</button></div></div>';
 
-    h += '<div class="card"><b>관리자</b><p class="small muted" style="margin:4px 0 8px">관리자는 명단 · 사진 · 예배 담당 · 출석 · 포상 · 공지를 모두 고칠 수 있습니다. ' +
+    h += '<div class="card"><b>문서함</b><p class="small muted" style="margin:4px 0 8px">손글씨로 채우는 고정 양식과 안내 자료입니다. 열어서 A4 · 실제 크기(100%)로 인쇄하세요. 감사장 · 표창장은 160~200g, 손편지는 100~120g 용지를 권합니다.</p>' +
+      DOCS.map(function (d) {
+        return '<div class="row small doc"><span class="grow"><b>' + d[1] + '</b> <span class="muted">' + d[2] + '</span></span>' +
+          '<a class="btn sm" href="docs/' + d[0] + '" target="_blank" rel="noopener">열기</a><a class="btn sm" href="docs/' + d[0] + '" download>내려받기</a></div>';
+      }).join('') + '</div>';
+    h += printPanel();
+    var iss = Object.keys(S.issues).map(function (k) { return Object.assign({ k: k }, S.issues[k]); }).sort(function (a, b) { return (b.at || 0) - (a.at || 0); });
+    h += '<div class="card"><b>지급 기록</b> <span class="small muted">' + iss.length + '건</span>' + (iss.length ? iss.slice(0, 60).map(function (r) {
+      return '<div class="row small doc"><span class="dt">' + fullDate(r.date || dateKeyOf(r.at)) + '</span><span class="grow"><b>' + esc(nameOf(r.memberId)) + '</b> · ' + (FORMS[r.doc] || r.doc) +
+        (r.award ? ' (' + esc(r.award) + ')' : '') + ' <span class="muted">' + esc(r.by || '') + '</span></span><button class="btn sm bad" data-act="issue-del" data-id="' + r.k + '">지우기</button></div>';
+    }).join('') : '<p class="small muted" style="margin:6px 0 0">아직 기록이 없습니다. 맞춤 인쇄에서 "지급 기록에 남기기"를 켜면 쌓입니다.</p>') + '</div>';
+
+    h += '<div class="card"><b>관리자</b><p class="small muted" style="margin:4px 0 8px">관리자는 명단 · 사진 · 예배 담당 · 출석 · 배지 · 포상 · 문서 · 공지를 모두 고칠 수 있습니다. ' +
       (S.master ? '앱에 한 번 로그인한 사람만 목록에 나옵니다.' : '관리자 지정은 마스터(' + esc(MASTER_NAME) + ')만 할 수 있습니다.') + '</p>';
     h += '<div class="row small" style="margin-bottom:4px"><b>' + esc(MASTER_NAME) + '</b><span class="muted">' + esc(MASTER_EMAIL) + ' · 마스터</span></div>';
     var users = Object.keys(S.users).map(function (k) { return Object.assign({ uid: k }, S.users[k]); })
@@ -642,6 +987,7 @@
       if ($('e-note').value.trim()) obj.note = $('e-note').value.trim();
       if (src && src.attend) obj.attend = src.attend;
       if (src && src.absent) obj.absent = src.absent;
+      if (src && src.excused) obj.excused = src.excused;
       var key = id || date + '_' + Date.now().toString(36);
       db.ref(R + 'events/' + key).set(obj).then(function () {
         closeModal(); toast('저장했습니다.');
@@ -655,15 +1001,22 @@
   }
 
   function editAttend(id) {
-    var e = S.events[id], attend = Object.assign({}, e.attend || {}), absent = Object.assign({}, e.absent || {});
+    var e = S.events[id], attend = Object.assign({}, e.attend || {}), absent = Object.assign({}, e.absent || {}), excused = Object.assign({}, e.excused || {});
     var served = slotIds(e);
     var others = sortedMembers().filter(function (m) { return served.indexOf(m.id) < 0 && (m.status !== 'retired' || attend[m.id]); });
     function cb(kind, mid, on) {
       return '<label><input type="checkbox" data-' + kind + '="' + mid + '"' + (on ? ' checked' : '') + '> ' + esc(nameOf(mid)) + '</label>';
     }
     modal('<h3>출석 체크</h3><p class="small muted">' + shortDate(e.date) + ' ' + esc(e.title || '') +
-      '<br>담당자는 섬김으로 자동 기록됩니다. 오지 못한 담당자는 "불참"에, 담당이 아니지만 함께한 팀원은 "출석"에 체크해 주세요.</p>' +
-      (served.length ? '<label class="f">담당자 불참</label><div class="checks">' + served.map(function (mid) { return cb('ab', mid, absent[mid]); }).join('') + '</div>' : '') +
+      '<br>담당자는 섬김으로 자동 기록됩니다. 오지 못했으면 "불참", 병가·돌봄·공식 사역처럼 미리 또는 나중에 승인된 사유면 "승인 제외"를 고릅니다. 승인 제외는 배지 평가 대상 일정(D)에서 빠지고, 사유는 기록하지 않습니다.</p>' +
+      (served.length ? '<label class="f">담당자</label><div class="att-list">' + served.map(function (mid) {
+        var v = excused[mid] ? 'ex' : absent[mid] ? 'ab' : '';
+        return '<div class="row small"><span class="grow">' + esc(nameOf(mid)) + ' <span class="muted">' + rolesIn(e, mid).join('·') + '</span></span>' +
+          '<select data-st="' + mid + '" style="width:auto;padding:4px 8px">' +
+          '<option value=""' + (v === '' ? ' selected' : '') + '>섬김</option><option value="ab"' + (v === 'ab' ? ' selected' : '') + '>불참</option>' +
+          '<option value="ex"' + (v === 'ex' ? ' selected' : '') + '>승인 제외</option></select></div>';
+      }).join('') + '</div>' : '') +
+      '<p class="small muted" style="margin:6px 0 0">담당 없이 출석한 기록은 결산 횟수에는 들어가지만 배지 평가(실제 수행)에는 들어가지 않습니다.</p>' +
       '<label class="f">출석 <a href="#" id="a-all" class="small" style="font-weight:500">활동 인원 모두 체크</a></label><div class="checks">' + others.map(function (m) { return cb('at', m.id, attend[m.id]); }).join('') + '</div>' +
       '<div class="foot"><button class="btn" id="a-close">닫기</button><button class="btn pri" id="a-save">저장</button></div>');
     $('a-all').onclick = function (ev) {
@@ -675,14 +1028,24 @@
     };
     $('a-close').onclick = function () { closeModal(); };
     $('a-save').onclick = function () {
-      var at = {}, ab = {};
+      var at = {}, ab = {}, ex = {};
       document.querySelectorAll('#modal [data-at]').forEach(function (x) { if (x.checked) at[x.getAttribute('data-at')] = true; });
-      document.querySelectorAll('#modal [data-ab]').forEach(function (x) { if (x.checked) ab[x.getAttribute('data-ab')] = true; });
-      db.ref(R + 'events/' + id).update({ attend: Object.keys(at).length ? at : null, absent: Object.keys(ab).length ? ab : null })
+      document.querySelectorAll('#modal [data-st]').forEach(function (x) {
+        if (x.value === 'ab') ab[x.getAttribute('data-st')] = true;
+        if (x.value === 'ex') ex[x.getAttribute('data-st')] = true;
+      });
+      db.ref(R + 'events/' + id).update({ attend: Object.keys(at).length ? at : null, absent: Object.keys(ab).length ? ab : null, excused: Object.keys(ex).length ? ex : null })
         .then(function () { closeModal(); toast('출석을 저장했습니다.'); }).catch(fail);
     };
   }
 
+  function memberBadges(id) {
+    var bs = visibleBadges(id), ys = yearsOf(bs);
+    if (!ys.length) return '';
+    return '<div class="mb-badges">' + ys.reverse().map(function (y) {
+      return '<div class="small muted" style="margin-top:8px">' + y + '년</div>' + collection(id, y, 40);
+    }).join('') + '</div>';
+  }
   function showMember(id) {
     var m = S.members[id], c = cfg(), y = todayKey().slice(0, 4);
     var ty = tally(y + '-01-01', y + '-12-31')[id] || { serve: 0, attend: 0, minutes: 0, points: 0 };
@@ -694,7 +1057,7 @@
       (extra ? '<div class="small" style="margin-top:4px">함께 맡는 자리: ' + esc(extra) + '</div>' : '') +
       (m.email ? '<div class="small muted" style="margin-top:4px">' + esc(m.email) + '</div>' : '') +
       (m.note ? '<div class="small" style="margin-top:6px;white-space:pre-wrap">' + esc(m.note) + '</div>' : '') +
-      '</div></div>' +
+      '</div></div>' + memberBadges(id) +
       '<div class="tiles" style="margin-top:14px">' +
       '<div class="tile"><div class="k">' + y + '년</div><div class="v">' + (ty.serve + ty.attend) + ' <small>회</small></div><div class="small muted">' + hm(ty.minutes) + (y + '-12-31' >= c.pointStart ? ' · ' + ty.points + '점' : '') + '</div></div>' +
       '<div class="tile"><div class="k">누적</div><div class="v">' + (al.serve + al.attend) + ' <small>회</small></div><div class="small muted">' + hm(al.minutes) + '</div></div></div>' +
@@ -727,6 +1090,7 @@
         return '<label><input type="checkbox" data-role="' + s[0] + '"' + (roles[s[0]] ? ' checked' : '') + '> ' + s[1] + '</label>';
       }).join('') + '</div>' +
       '<label class="f">메모 (휴직 기간, 특이사항 등)</label><textarea id="p-note">' + esc(m.note || '') + '</textarea>' +
+      '<label class="small" style="display:block;margin-top:10px"><input type="checkbox" id="p-hide"' + (m.hideBadges ? ' checked' : '') + '> 배지 비공개 (본인이 원할 때. 본인과 관리자만 봅니다)</label>' +
       '<div class="foot">' + (id ? '<button class="btn bad" id="p-remove">삭제</button><span class="grow"></span>' : '') +
       '<button class="btn" id="p-close">닫기</button><button class="btn pri" id="p-save">저장</button></div>');
     function drawPhoto() {
@@ -752,6 +1116,7 @@
       var rs = {};
       document.querySelectorAll('#modal [data-role]').forEach(function (x) { if (x.checked) rs[x.getAttribute('data-role')] = true; });
       if (Object.keys(rs).length) obj.roles = rs;
+      if ($('p-hide').checked) obj.hideBadges = true;
       var key = id || db.ref(R + 'members').push().key;
       var jobs = [db.ref(R + 'members/' + key).set(obj)];
       if (photoChanged) jobs.push(db.ref(R + 'photos/' + key).set(photo || null));
@@ -817,11 +1182,11 @@
     var ids = rows.map(function (r) { return r.id; });
     Object.keys(win).forEach(function (k) { if (ids.indexOf(k) < 0) ids.push(k); });
     var byId = {}; rows.forEach(function (r) { byId[r.id] = r; });
-    modal('<h3>' + p.label + ' 우수 스텝</h3><p class="small muted">순위가 높은 사람부터 보입니다. 포상할 사람을 고르고 격려의 말을 남겨 주세요.</p>' +
+    modal('<h3>' + p.label + ' 우수 스텝</h3><p class="small muted">가나다순으로 보입니다. 포상할 사람을 고르고 격려의 말을 남겨 주세요.</p>' +
       '<div style="max-height:300px;overflow-y:auto">' + ids.map(function (id) {
         var r = byId[id];
         return '<label class="row small" style="margin:4px 0;flex-wrap:nowrap"><input type="checkbox" data-win="' + id + '"' + (win[id] ? ' checked' : '') + '>' +
-          avatar(id, 24) + '<b>' + esc(nameOf(id)) + '</b><span class="muted">' + (r ? r.rank + '위 · ' + r.total + '회' + (p.to >= cfg().pointStart ? ' · ' + r.points + '점' : '') : '') + '</span></label>';
+          avatar(id, 24) + '<b>' + esc(nameOf(id)) + '</b><span class="muted">' + (r ? r.total + '회' + (p.to >= cfg().pointStart ? ' · ' + r.points + '점' : '') : '') + '</span></label>';
       }).join('') + '</div>' +
       '<label class="f">격려의 말</label><textarea id="w-msg" placeholder="예: 한 해 동안 이른 아침 자리를 지켜 주셔서 감사합니다.">' + esc(a.message || '') + '</textarea>' +
       '<div class="foot">' + (S.awards[p.key] ? '<button class="btn bad" id="w-del">선정 취소</button><span class="grow"></span>' : '') +
@@ -856,12 +1221,26 @@
     else if (act === 'mem-new') editMember(null);
     else if (act === 'st-mode') { S.statMode = id; render(true); }
     else if (act === 'st-csv') statsCsv();
-    else if (act === 'award') { var p = periodRange(); editAward(p, ranking(tally(p.from, p.to), p.to >= cfg().pointStart)); }
+    else if (act === 'award') { var p = periodRange(); editAward(p, records(tally(p.from, p.to))); }
     else if (act === 's-save') saveSettings();
+    else if (act === 'eval-q') evalQuarterModal();
+    else if (act === 'eval-y') evalYearModal();
+    else if (act === 'cheer-quick') sendCheer(id, b.getAttribute('data-text'));
+    else if (act === 'cheer-send') { var inp = document.querySelector('[data-cheer="' + id + '"]'); sendCheer(id, inp && inp.value); }
+    else if (act === 'cheer-del') {
+      var cp = id.split('|');
+      if (confirm('이 축하 글을 지울까요?')) db.ref(R + 'cheers/' + cp[0] + '/' + cp[1]).remove().catch(fail);
+    }
+    else if (act === 'print-open') openPrint();
+    else if (act === 'issue-del') { if (confirm('이 지급 기록을 지울까요?')) db.ref(R + 'issues/' + id).remove().catch(fail); }
     else if (act === 'backup') backup();
   });
   document.addEventListener('input', function (ev) {
     if (ev.target.id === 'q') { S.q = ev.target.value; render(true); }
+  });
+  document.addEventListener('keydown', function (ev) {
+    var ck = ev.target.getAttribute && ev.target.getAttribute('data-cheer');
+    if (ck && ev.key === 'Enter') sendCheer(ck, ev.target.value);
   });
   document.addEventListener('change', function (ev) {
     var t = ev.target;
@@ -870,15 +1249,20 @@
     else if (t.id === 'st-year') { S.statYear = t.value; render(true); }
     else if (t.id === 'st-sub') { if (S.statMode === 'month') S.statMonth = t.value; else S.statQ = +t.value; render(true); }
     else if (t.id === 'imp') importFile(t.files[0]);
+    else if (t.id === 'b-year') { S.bYear = t.value; render(true); }
+    else if (t.id === 'pr-mem') {
+      var pm = S.members[t.value];
+      if (pm) $('pr-role').value = (pm.title ? pm.title + ' · ' : '') + partOf(pm.part).label;
+    }
     else if (t.hasAttribute('data-admin')) setAdmin(t.getAttribute('data-admin'), t.checked);
   });
 
   function statsCsv() {
-    var p = periodRange(), usePoints = p.to >= cfg().pointStart, rows = ranking(tally(p.from, p.to), usePoints);
-    var lines = [['순위', '이름', '파트', '상태', '섬김', '출석', '합계', '시간(분)'].concat(usePoints ? ['포인트'] : []).join(',')];
+    var p = periodRange(), usePoints = p.to >= cfg().pointStart, rows = records(tally(p.from, p.to));
+    var lines = [['이름', '파트', '상태', '섬김', '출석', '합계', '시간(분)'].concat(usePoints ? ['포인트'] : []).join(',')];
     rows.forEach(function (r) {
       var m = S.members[r.id] || {};
-      lines.push([r.rank, nameOf(r.id), partOf(m.part).label, STATUS[m.status || 'active'] || '', r.serve, r.attend, r.total, r.minutes].concat(usePoints ? [r.points] : [])
+      lines.push([nameOf(r.id), partOf(m.part).label, STATUS[m.status || 'active'] || '', r.serve, r.attend, r.total, r.minutes].concat(usePoints ? [r.points] : [])
         .map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(','));
     });
     download('찬양팀_섬김_' + p.key + '.csv', '﻿' + lines.join('\r\n'), 'text/csv;charset=utf-8');
@@ -889,7 +1273,7 @@
     document.querySelectorAll('#main [data-min]').forEach(function (x) { minutes[x.getAttribute('data-min')] = Math.max(0, +x.value || 0); });
     var start = $('s-start').value;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(start)) { toast('포인트 계산 시작일을 골라 주세요.'); return; }
-    db.ref(R + 'settings').set({ pointStart: start, servePoint: +$('s-serve').value || 0, attendPoint: +$('s-attend').value || 0, minutes: minutes })
+    db.ref(R + 'settings').update({ pointStart: start, servePoint: +$('s-serve').value || 0, attendPoint: +$('s-attend').value || 0, minutes: minutes })
       .then(function () { toast('기준을 저장했습니다.'); render(true); }).catch(fail);
   }
 
@@ -916,7 +1300,7 @@
   }
 
   function backup() {
-    var data = { members: S.members, events: S.events, photos: S.photos, awards: S.awards, settings: S.settings, notice: S.notice, savedAt: new Date().toISOString() };
+    var data = { members: S.members, events: S.events, photos: S.photos, awards: S.awards, badges: S.badges, cheers: S.cheers, issues: S.issues, settings: S.settings, notice: S.notice, savedAt: new Date().toISOString() };
     download('찬양팀_백업_' + todayKey() + '.json', JSON.stringify(data, null, 1), 'application/json');
   }
 

@@ -32,6 +32,20 @@
       },
       "notice": {
         ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'cgn210@cgnmail.net' || root.child('praise/admins').child(auth.uid).exists())"
+      },
+      "badges": {
+        ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'cgn210@cgnmail.net' || root.child('praise/admins').child(auth.uid).exists())"
+      },
+      "issues": {
+        ".write": "auth != null && auth.token.email_verified === true && (auth.token.email === 'cgn210@cgnmail.net' || root.child('praise/admins').child(auth.uid).exists())"
+      },
+      "cheers": {
+        "$badge": {
+          "$uid": {
+            ".write": "auth != null && auth.token.email_verified === true && auth.token.email.endsWith('@cgnmail.net') && (auth.uid === $uid || auth.token.email === 'cgn210@cgnmail.net' || root.child('praise/admins').child(auth.uid).exists())",
+            ".validate": "newData.child('text').isString() && newData.child('text').val().length <= 100 && newData.child('name').isString()"
+          }
+        }
       }
     }
   }

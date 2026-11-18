@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AM1 배지 안내</title>
+<meta name="description" content="함께 자라는 예배자 — AM1 배지와 섬김 평가 안내" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
+<style>
+  :root { --navy: #122a42; --navy2: #2b4a6d; --gold: #c89b55; --gold-d: #a8793a; --gold-l: #f3e6cc; --bg: #f8f1e4; --card: #fffdf9; --line: #ecdfc8; --muted: #6f7787; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: 'Noto Sans KR', sans-serif; color: var(--navy); font-size: 15.5px; line-height: 1.75;
+    background: radial-gradient(700px 480px at 12% 100%, rgba(200,155,85,0.22), transparent 70%), linear-gradient(180deg, #fffdf8 0%, var(--bg) 100%);
+    background-attachment: fixed; min-height: 100vh;
+  }
+  header { background: linear-gradient(135deg, #0c1d30 0%, var(--navy) 50%, #1f3d5e 100%); border-bottom: 2px solid rgba(200,155,85,0.6); color: #fff; }
+  .top { max-width: 860px; margin: 0 auto; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+  .top img { height: 34px; }
+  .top b { font-size: 17px; }
+  .top b span { color: #e3b871; }
+  .top a { margin-left: auto; color: #fff; text-decoration: none; font-size: 13.5px; background: rgba(255,255,255,0.14); padding: 5px 12px; border-radius: 8px; white-space: nowrap; }
+  nav.toc { position: sticky; top: 0; z-index: 5; background: rgba(255,253,248,0.95); border-bottom: 1px solid var(--line); backdrop-filter: blur(6px); }
+  nav.toc div { max-width: 860px; margin: 0 auto; display: flex; overflow-x: auto; }
+  nav.toc a { padding: 10px 12px; color: var(--muted); font-weight: 700; font-size: 14px; text-decoration: none; white-space: nowrap; }
+  nav.toc a:hover { color: var(--navy); }
+  main { max-width: 860px; margin: 0 auto; padding: 18px 16px 70px; }
+  .hero { text-align: center; padding: 26px 16px 18px; }
+  .hero img { width: min(340px, 80%); }
+  .hero h1 { font-size: 26px; font-weight: 900; margin: 12px 0 4px; letter-spacing: -0.02em; }
+  .hero p { margin: 0; color: var(--muted); }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 18px 14px; margin-top: 16px; scroll-margin-top: 54px; }
+  h2 { font-size: 19px; margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
+  h2 .no { width: 26px; height: 26px; border-radius: 50%; background: var(--navy); color: #f3e6cc; font-size: 13px; display: inline-grid; place-items: center; flex: none; }
+  h3 { font-size: 16px; margin: 16px 0 6px; }
+  p, li { margin: 6px 0; }
+  ul { padding-left: 20px; margin: 6px 0; }
+  .note { background: #fbf3e3; border-left: 3px solid var(--gold); padding: 8px 12px; border-radius: 6px; font-size: 14px; color: #5a4a2f; margin: 10px 0; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 10px 0; }
+  .tile { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; text-align: center; }
+  .tile b { display: block; font-size: 24px; font-weight: 900; color: var(--navy); }
+  .tile span { font-size: 13px; color: var(--muted); }
+  .tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 10px 0; }
+  .tier { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px; text-align: center; }
+  .tier b { display: block; font-size: 17px; }
+  .tier .p { font-size: 22px; font-weight: 900; color: var(--gold-d); }
+  .tier small { color: var(--muted); }
+  .qrow { display: grid; grid-template-columns: 92px repeat(3, 1fr); gap: 8px; align-items: center; padding: 10px 0; border-top: 1px dashed var(--line); }
+  .qrow .ql b { display: block; }
+  .qrow .ql small { color: var(--muted); font-size: 12px; line-height: 1.4; display: block; }
+  .bd { text-align: center; font-size: 13px; line-height: 1.35; }
+  .bd img { width: 74px; height: 74px; display: block; margin: 0 auto 4px; }
+  .bd small { color: var(--muted); }
+  .formula { text-align: center; font-size: 19px; font-weight: 900; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 10px; margin: 10px 0; }
+  .formula small { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 8px 0; }
+  th, td { border-bottom: 1px solid var(--line); padding: 7px 6px; text-align: center; }
+  th { color: var(--muted); font-size: 13px; }
+  .steps { counter-reset: s; list-style: none; padding: 0; }
+  .steps li { counter-increment: s; position: relative; padding-left: 36px; margin: 10px 0; }
+  .steps li:before { content: counter(s); position: absolute; left: 0; top: 2px; width: 24px; height: 24px; border-radius: 50%; background: var(--gold); color: #fff; font-size: 13px; font-weight: 700; display: grid; place-items: center; }
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+  .gallery a { display: block; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff; }
+  .gallery img { width: 100%; display: block; }
+  .gallery span { display: block; font-size: 13px; padding: 6px 10px; color: var(--muted); }
+  .refs { font-size: 13.5px; color: var(--muted); }
+  @media (max-width: 520px) {
+    .qrow { grid-template-columns: 1fr 1fr 1fr; }
+    .qrow .ql { grid-column: 1 / -1; }
+    .bd img { width: 64px; height: 64px; }
+    .tiers { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header><div class="top">
+  <img src="amone-mark-white.png" alt="AM1">
+  <b>모든 아침, <span>오직 한 분께</span></b>
+  <a href="./">앱으로 돌아가기</a>
+</div></header>
+
+<nav class="toc"><div>
+  <a href="#why">목적</a><a href="#badges">배지 16종</a><a href="#rate">참여율</a><a href="#rules">예외 규칙</a>
+  <a href="#year">연말 감사</a><a href="#flow">운영 순서</a><a href="#app">앱에서 보기</a><a href="#more">그림 자료</a>
+</div></nav>
+
+<main>
+  <div class="hero">
+    <img src="amone-logo.png" alt="AM1 All Morning For One">
+    <h1>함께 자라는 예배자</h1>
+    <p>AM1 찬양팀 배지와 섬김 평가 안내</p>
+  </div>
+
+  <section id="why">
+    <h2><span class="no">1</span>왜 배지를 주나요</h2>
+    <p>이른 아침 약속한 예배 섬김을 꾸준히 이어 가는 수고를 격려하고, 공동체의 감사를 눈에 보이게 기록하려는 것입니다.</p>
+    <ul>
+      <li>배지는 신앙의 수준이나 하나님께 인정받은 정도를 판정하는 표지가 <b>아닙니다</b>.</li>
+      <li>청지기의 신실함(고린도전서 4:2)을 운영의 방향으로 삼지만, 출석만으로 신실함 전체를 판단하지 않습니다.</li>
+      <li>기도의 깊이, 영성, 헌신의 정도는 점수로 매기지 않습니다.</li>
+      <li>몇 명을 골라 순위를 매기지 않습니다. 기준을 채운 사람 모두를 함께 축하합니다.</li>
+    </ul>
+    <div class="tiles">
+      <div class="tile"><b>4</b><span>분기 배지 (분기마다 1개)</span></div>
+      <div class="tile"><b>3</b><span>누적 기념 (30 · 60 · 100회)</span></div>
+      <div class="tile"><b>1</b><span>연말 함께 완주</span></div>
+      <div class="tile"><b>8</b><span>한 해 최대 획득 수</span></div>
+    </div>
+  </section>
+
+  <section id="badges">
+    <h2><span class="no">2</span>배지 16종</h2>
+    <p>분기마다 참여율에 따라 <b>동행 · 자람 · 결실</b> 중 해당하는 가장 높은 단계 하나를 받습니다. 아래 단계를 따로 더 주지 않습니다.</p>
+    <div class="tiers">
+      <div class="tier"><b>동행</b><div class="p">70%</div><small>70% 이상 85% 미만 · 한 겹 테두리</small></div>
+      <div class="tier"><b>자람</b><div class="p">85%</div><small>85% 이상 95% 미만 · 두 겹 테두리</small></div>
+      <div class="tier"><b>결실</b><div class="p">95%</div><small>95% 이상 · 세 점 장식</small></div>
+    </div>
+
+    <div class="qrow"><div class="ql"><b>1분기</b><small>씨앗의 자람<br>마가복음 4장 · 시편 1:3</small></div>
+      <div class="bd"><img src="badges/AM1-Q1-BEGIN-seed.png" alt="">씨앗<br><small>동행</small></div>
+      <div class="bd"><img src="badges/AM1-Q1-GROW-sprout.png" alt="">새싹<br><small>자람</small></div>
+      <div class="bd"><img src="badges/AM1-Q1-BLOOM-tree.png" alt="">나무<br><small>결실</small></div></div>
+    <div class="qrow"><div class="ql"><b>2분기</b><small>공동체를 밝히는 빛<br>마태복음 5:14-16</small></div>
+      <div class="bd"><img src="badges/AM1-Q2-BEGIN-lamp.png" alt="">작은 등불<br><small>동행</small></div>
+      <div class="bd"><img src="badges/AM1-Q2-GROW-lamp.png" alt="">풍성한 등불<br><small>자람</small></div>
+      <div class="bd"><img src="badges/AM1-Q2-BLOOM-light.png" alt="">빛을 퍼뜨리는 등불<br><small>결실</small></div></div>
+    <div class="qrow"><div class="ql"><b>3분기</b><small>주님 안에 거함과 열매<br>요한복음 15:5</small></div>
+      <div class="bd"><img src="badges/AM1-Q3-BEGIN-leaf.png" alt="">포도잎<br><small>동행</small></div>
+      <div class="bd"><img src="badges/AM1-Q3-GROW-vine.png" alt="">포도 가지<br><small>자람</small></div>
+      <div class="bd"><img src="badges/AM1-Q3-BLOOM-grapes.png" alt="">포도송이<br><small>결실</small></div></div>
+    <div class="qrow"><div class="ql"><b>4분기</b><small>함께 기억하는 수고<br>시편 126:5-6</small></div>
+      <div class="bd"><img src="badges/AM1-Q4-BEGIN-wheat.png" alt="">한 이삭<br><small>동행</small></div>
+      <div class="bd"><img src="badges/AM1-Q4-GROW-sheaf.png" alt="">곡식 단<br><small>자람</small></div>
+      <div class="bd"><img src="badges/AM1-Q4-BLOOM-harvest.png" alt="">추수 화환<br><small>결실</small></div></div>
+
+    <h3>누적 기념 배지와 연말 배지</h3>
+    <div class="qrow"><div class="ql"><b>기념 · 연말</b><small>마가복음 4:8 · 고린도전서 9:25</small></div>
+      <div class="bd"><img src="badges/AM1-MILESTONE-030.png" alt="">누적 30회</div>
+      <div class="bd"><img src="badges/AM1-MILESTONE-060.png" alt="">누적 60회</div>
+      <div class="bd"><img src="badges/AM1-MILESTONE-100.png" alt="">누적 100회</div></div>
+    <div class="qrow"><div class="ql"></div>
+      <div class="bd"><img src="badges/AM1-YEAR-TOGETHER.png" alt="">한 해 함께 완주</div><div></div><div></div></div>
+    <ul>
+      <li>누적 배지는 그해 실제로 섬긴 예배 수(승인 제외 일수는 넣지 않음)로 세며, 새해에 처음부터 다시 셉니다.</li>
+      <li>식물 · 등불의 세 단계는 디자인으로 표현한 발전 단계입니다. 성경이 세 등급을 정했다는 뜻이 아닙니다.</li>
+    </ul>
+    <div class="note">성경의 30배 · 60배 · 100배는 결실의 배수이며 예배 참여 횟수의 명령이 아닙니다. 70% · 85% · 95%, 최소 13회, 연말 85% 같은 숫자는 팀 운영을 위한 기준이며 성경이 정한 수치가 아닙니다. 교회의 포상을 성경이 말하는 상급과 같게 여기지 않습니다.</div>
+  </section>
+
+  <section id="rate">
+    <h2><span class="no">3</span>참여율은 이렇게 계산합니다</h2>
+    <div class="formula">참여율 = 실제 수행 A ÷ 개인 평가대상 일정 D × 100
+      <small>D = 미리 정해진 내 배정 일정 − 전체 휴회 − 승인된 병가 · 돌봄 · 공식 사역 · 휴식</small></div>
+    <ul>
+      <li>판정은 반올림하기 전 비율로 합니다. 예: 39회 중 37회는 94.87%이므로 결실이 아니라 <b>자람</b>입니다.</li>
+      <li>필요한 최소 횟수는 D × 기준 비율을 올림합니다.</li>
+    </ul>
+    <table>
+      <thead><tr><th>평가대상 D</th><th>동행 (70%)</th><th>자람 (85%)</th><th>결실 (95%)</th></tr></thead>
+      <tbody>
+        <tr><td>39회</td><td>28회</td><td>34회</td><td>38회</td></tr>
+        <tr><td>40회</td><td>28회</td><td>34회</td><td>38회</td></tr>
+      </tbody>
+    </table>
+    <p>예배 총횟수와 각 사람에게 배정된 섬김 횟수는 다릅니다. 교대로 편성하면 D는 사람마다 다릅니다.</p>
+    <div class="note">참고: 월 · 수 · 금 정기예배를 휴회 없이 모두 드린다고 가정하면 2027년은 1분기 39회, 2분기 39회, 3분기 39회, 4분기 40회로 한 해 157회입니다. 실제 값은 휴회 · 추가 예배 · 교대 편성에 따라 달라집니다.</div>
+  </section>
+
+  <section id="rules">
+    <h2><span class="no">4</span>예외와 세부 규칙</h2>
+    <ul>
+      <li>한 날짜에 여러 역할을 맡아도 그 예배는 <b>1회</b>입니다.</li>
+      <li>담당 역할을 맡아 섬긴 것과 단순히 예배에 참석한 것은 구분합니다. 배지 평가에는 담당 수행만 들어갑니다.</li>
+      <li>연습에만 참석한 날은 예배 수행으로 세지 않습니다.</li>
+      <li>승인된 교대는 두 사람의 배정표를 함께 고치고, 한 자리를 두 사람의 수행으로 겹쳐 세지 않습니다.</li>
+      <li>배정 밖에서 대신 선 경우에는 바뀐 배정으로 기록하고, 실제로 선 사람에게 수행을 인정합니다.</li>
+      <li>질병 · 장례 · 돌봄 같은 급한 사유는 나중에 승인해도 됩니다. 승인 제외는 참석으로 기록하지 않고 D에서 뺍니다.</li>
+      <li>개인 사유의 자세한 내용은 공유하지 않고, 승인 여부만 기록합니다.</li>
+      <li>D가 0이면 평가하지 않습니다. D가 13회보다 적으면 작은 표본의 100%를 막기 위해 정규 배지 대신 <b>시작 · 복귀 감사 카드</b>를 드립니다.</li>
+      <li>한 분기 전체를 쉰 경우 그 분기는 평가하지 않고, 연말에 따로 동행의 감사로 격려합니다.</li>
+      <li>70%에 못 미치면 배지를 미루고 다음 분기에 다시 함께합니다. 이미 받은 배지는 회수하지 않습니다.</li>
+    </ul>
+    <h3>태도와 돌봄</h3>
+    <ul>
+      <li>시간 약속, 사전 연락, 준비, 협력은 분기마다 10분 대화로 구체적인 일과 감사를 함께 돌아봅니다.</li>
+      <li>지각이나 소통 문제는 미리 정한 기준에 따라 따로 돌봄과 대화로 다룹니다. 임의로 감점하거나 리더의 인상으로 배지를 취소하지 않습니다.</li>
+      <li>음향 · 기술 · 자막 · 악기 · 보컬 등 예배를 돕는 모든 역할에 같은 계산을 적용합니다.</li>
+    </ul>
+  </section>
+
+  <section id="year">
+    <h2><span class="no">5</span>연말 감사</h2>
+    <p><b>한 해 함께 완주</b>: 네 분기 배지를 각각 받고, 연간 참여율 85% 이상이며, 모든 분기가 70% 이상인 경우입니다.</p>
+    <ul>
+      <li>연간 참여율 = 네 분기 A의 합 ÷ 네 분기 D의 합. 분기 비율을 단순히 평균하지 않습니다.</li>
+      <li>예: 34/39, 35/39, 38/39, 36/40 → 143/157 = 91.08%. 이 사람은 1분기 자람, 2분기 자람, 3분기 결실, 4분기 자람과 누적 100회 기념 배지를 받고 연말 완주 대상이 됩니다.</li>
+      <li>기준을 채운 모든 사람에게 같은 감사를 드립니다(손편지와 감사장, 식사권이나 도서비 등). 예산은 대상자 수 × 미리 정한 같은 금액입니다.</li>
+      <li>병가 · 돌봄 · 중간 합류로 기준에 못 미친 분도 따로 동행의 감사로 인정합니다. 완주를 위해 아픈 몸으로 나오라고 하지 않습니다.</li>
+      <li>누적 100회 배지는 연말 완주의 필수 조건이 아닙니다.</li>
+    </ul>
+  </section>
+
+  <section id="flow">
+    <h2><span class="no">6</span>운영 순서</h2>
+    <ol class="steps">
+      <li><b>연초</b> — 규칙과 일정을 함께 정하고 개인 배정표를 확정합니다.</li>
+      <li><b>매 예배</b> — 담당자가 앱의 출석 체크에서 섬김 · 불참 · 승인 제외를 기록합니다.</li>
+      <li><b>매월</b> — 각자 '내 기록'에서 확인하고, 다르면 7일 안에 관리자에게 알립니다.</li>
+      <li><b>분기 말</b> — 담당자가 계산하고, 다른 담당자 한 명이 검토하고, 본인이 확인한 뒤 배지를 수여합니다.</li>
+      <li><b>연말</b> — 네 분기 배지와 연간 참여율을 확인하고 기준을 채운 모든 사람에게 감사를 전합니다.</li>
+    </ol>
+    <p>평가하는 사람의 실수로 판정이 달라졌다면 바로 정정합니다. 첫 분기는 시범으로 운영하며, 참여율과 함께 부담감 · 병가 사용 · 중도 이탈 · 교대 부담을 함께 살핍니다.</p>
+  </section>
+
+  <section id="app">
+    <h2><span class="no">7</span>앱에서 보는 법</h2>
+    <ul>
+      <li><b>배지</b> 탭 — 최근 수여 소식과 올해 배지 수집판을 봅니다. 동료의 배지 아래에 "축하해요" 같은 한 줄 축하를 남길 수 있습니다.</li>
+      <li><b>명단</b> — 각자의 사진 아래에 가장 최근 해의 배지가 작게 표시되고, 누르면 해마다 모은 배지를 볼 수 있습니다.</li>
+      <li><b>내 기록</b> — 올해 내 배지, 이번 분기에 지금까지 섬긴 횟수, 받은 축하 글을 봅니다.</li>
+      <li>배지는 팀 안에서 함께 보며 축하합니다. 공개를 원하지 않으면 관리자에게 말씀해 주세요. '배지 비공개'로 바꾸면 본인과 관리자만 봅니다.</li>
+      <li>앱은 회사 메일로 로그인한 팀원만 볼 수 있습니다.</li>
+    </ul>
+  </section>
+
+  <section id="more">
+    <h2><span class="no">8</span>그림 자료</h2>
+    <p>눌러서 크게 볼 수 있습니다. 인쇄할 때는 관리자에게 PDF를 요청하세요.</p>
+    <div class="gallery">
+      <a href="guide/AM1-overview-poster-A3.png" target="_blank" rel="noopener"><img src="guide/AM1-overview-poster-A3.png" alt="" loading="lazy"><span>요약 포스터</span></a>
+      <a href="guide/AM1-infographic-01.png" target="_blank" rel="noopener"><img src="guide/AM1-infographic-01.png" alt="" loading="lazy"><span>1. 정체성과 로고 의미</span></a>
+      <a href="guide/AM1-infographic-02.png" target="_blank" rel="noopener"><img src="guide/AM1-infographic-02.png" alt="" loading="lazy"><span>2. 연간 예배 리듬</span></a>
+      <a href="guide/AM1-infographic-03.png" target="_blank" rel="noopener"><img src="guide/AM1-infographic-03.png" alt="" loading="lazy"><span>3. 배지 16종</span></a>
+      <a href="guide/AM1-infographic-04.png" target="_blank" rel="noopener"><img src="guide/AM1-infographic-04.png" alt="" loading="lazy"><span>4. 평가 산식과 예외</span></a>
+      <a href="guide/AM1-infographic-05.png" target="_blank" rel="noopener"><img src="guide/AM1-infographic-05.png" alt="" loading="lazy"><span>5. 연말 감사와 예시</span></a>
+      <a href="guide/AM1-infographic-06.png" target="_blank" rel="noopener"><img src="guide/AM1-infographic-06.png" alt="" loading="lazy"><span>6. 운영 · 시상 흐름</span></a>
+      <a href="guide/AM1-infographic-07.png" target="_blank" rel="noopener"><img src="guide/AM1-infographic-07.png" alt="" loading="lazy"><span>7. 분기 평가 기록 양식</span></a>
+      <a href="guide/AM1-infographic-08.png" target="_blank" rel="noopener"><img src="guide/AM1-infographic-08.png" alt="" loading="lazy"><span>8. 연말 수여 기록 양식</span></a>
+    </div>
+    <p class="refs">디자인에 영감을 준 성경 본문: 고린도전서 4:2 · 마가복음 4:8, 4:26-29 · 마태복음 5:14-16 · 요한복음 15:5 · 시편 1:3, 126:5-6 · 고린도전서 9:25. 본문은 성경에서 직접 읽어 주세요.</p>
+  </section>
+</main>
+</body>
+</html>
