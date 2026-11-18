@@ -570,10 +570,11 @@
     return '<div class="card ev' + (e.date < today ? ' past' : '') + (e.date === today ? ' today' : '') + '">' +
       '<div class="date' + (d === 6 ? ' sat' : '') + '"><b>' + (+e.date.slice(8)) + '</b><span>' + DOW.charAt(d) + '요일</span></div>' +
       '<div class="body"><div class="row"><span class="title">' + esc(e.title || TYPES[e.type] || '예배') + '</span>' +
-      (e.title && e.title !== TYPES[e.type] ? '<span class="badge type">' + (TYPES[e.type] || '기타') + '</span>' : '') + '<span class="grow"></span>' +
-      (S.admin ? '<button class="btn sm" data-act="ev-att" data-id="' + e.id + '">출석 체크</button><button class="btn sm" data-act="ev-edit" data-id="' + e.id + '">편집</button>' : '') +
+      (e.title && e.title !== TYPES[e.type] ? '<span class="badge type">' + (TYPES[e.type] || '기타') + '</span>' : '') +
       '</div>' + (e.note ? '<div class="small muted">' + esc(e.note) + '</div>' : '') +
       (rows ? '<div class="slots">' + rows + '</div>' : '<div class="small muted" style="margin-top:4px">담당자 미정</div>') +
+      // 버튼은 제목 길이와 상관없이 늘 카드 아래 오른쪽에
+      (S.admin ? '<div class="ev-act"><button class="btn sm" data-act="ev-att" data-id="' + e.id + '">출석 체크</button><button class="btn sm" data-act="ev-edit" data-id="' + e.id + '">편집</button></div>' : '') +
       '</div></div>';
   }
 
