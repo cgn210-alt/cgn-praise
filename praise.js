@@ -22,6 +22,8 @@
   // 직임 입력 칸에서 고를 수 있는 이름 (직접 적어도 됩니다)
   var TITLES = ['총괄', '총무', '보컬 파트장', '남성 보컬 파트장', '여성 보컬 파트장', '건반 파트장', '리듬 파트장', '음향 감독', '영상기술 파트장', '자막 파트장'];
   var DOW = '일월화수목금토';
+  // 사진이 없을 때 보이는 사람 모양 (이름 글자와 겹치지 않게)
+  var PERSON = '<svg class="ph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="4.2"/><path d="M3.5 22c0-4.7 3.8-8 8.5-8s8.5 3.3 8.5 8z"/></svg>';
   var R = 'praise/';
 
   var S = {
@@ -96,12 +98,12 @@
   function avatar(id, size) {
     var m = S.members[id], ph = S.photos[id], st = 'width:' + size + 'px;height:' + size + 'px';
     if (ph) return '<span class="av" style="' + st + '"><img src="' + ph + '" alt=""></span>';
-    return '<span class="av" style="' + st + '">' + esc(m ? m.name.slice(-2) : '?') + '</span>';
+    return '<span class="av" style="' + st + '">' + PERSON + '</span>';
   }
   function photoBox(id) {
     var m = S.members[id], ph = S.photos[id];
     if (ph) return '<div class="photo"><img src="' + ph + '" alt="' + esc(m && m.name) + '"></div>';
-    return '<div class="photo">' + esc(m ? m.name.slice(-2) : '?') + '</div>';
+    return '<div class="photo">' + PERSON + '</div>';
   }
   function download(name, text, type) {
     var a = document.createElement('a');
@@ -728,7 +730,7 @@
       '<div class="foot">' + (id ? '<button class="btn bad" id="p-remove">삭제</button><span class="grow"></span>' : '') +
       '<button class="btn" id="p-close">닫기</button><button class="btn pri" id="p-save">저장</button></div>');
     function drawPhoto() {
-      $('p-box').innerHTML = photo ? '<div class="photo"><img src="' + photo + '" alt=""></div>' : '<div class="photo">' + esc(($('p-name').value || '?').slice(-2)) + '</div>';
+      $('p-box').innerHTML = photo ? '<div class="photo"><img src="' + photo + '" alt=""></div>' : '<div class="photo">' + PERSON + '</div>';
       $('p-del').disabled = !photo;
     }
     drawPhoto();

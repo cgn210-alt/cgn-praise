@@ -129,6 +129,9 @@
   .av img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .photo { aspect-ratio: 3 / 4; border-radius: 10px; overflow: hidden; background: linear-gradient(160deg, #e9dcc3, #c9a96f); color: #fff; display: grid; place-items: center; font-size: 28px; font-weight: 900; }
   .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ph { fill: currentColor; opacity: 0.85; align-self: end; }
+  .av .ph { width: 82%; height: 82%; }
+  .photo .ph { width: 74%; height: 74%; }
 
   /* 명단 */
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 10px; }
@@ -209,6 +212,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="praise.js?v=2"></script>
+<script src="praise.js?v=3"></script>
 </body>
 </html>
