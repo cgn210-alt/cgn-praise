@@ -808,26 +808,37 @@
       var pk = partOf((S.members[id] || {}).part).key;
       if (pk === lastPart) return '';
       lastPart = pk;
-      return '<tr class="grp"><td class="l" colspan="7">' + partOf(pk).label + '</td></tr>';
+      return '<div class="q-grp">' + partOf(pk).label + '</div>';
     }
+    var ys = yearChoices(y), yi = ys.indexOf(y);
     modal('<h3>분기 돌아보기 · 배지 수여</h3>' +
-      '<div class="row"><select id="eq-y" style="width:auto">' + yearChoices(y).map(function (v) { return '<option' + (v === y ? ' selected' : '') + '>' + v + '</option>'; }).join('') + '</select>' +
-      '<select id="eq-q" style="width:auto">' + [1, 2, 3, 4].map(function (v) { return '<option value="' + v + '"' + (v === +q ? ' selected' : '') + '>' + v + '분기</option>'; }).join('') + '</select></div>' +
+      // 해는 ‹ › 로 넘기고 분기는 버튼으로 (앱의 다른 선택 버튼과 같은 모양)
+      '<div class="q-pick"><div class="ystep"><button class="nav" id="eq-prev"' + (yi <= 0 ? ' disabled' : '') + '>‹</button><b>' + y + '년</b>' +
+      '<button class="nav" id="eq-next"' + (yi >= ys.length - 1 ? ' disabled' : '') + '>›</button></div>' +
+      '<div class="seg qseg">' + [1, 2, 3, 4].map(function (v) {
+        return '<button data-q="' + v + '" class="' + (v === +q ? 'on' : '') + '">' + v + '분기</button>';
+      }).join('') + '</div></div>' +
       '<p class="small muted">참여율 = 실제 수행 A ÷ 약속한 일정 D(배정 − 승인 제외). 동행 ' + TIERS[2][2] + '% · 자람 ' + TIERS[1][2] + '% · 결실 ' + TIERS[0][2] + '% 이상, D가 ' + MIN_SAMPLE + '회 미만이면 감사 카드를 제안합니다(미리 고르지는 않습니다). 제안은 참고이며 수여는 관리자가 정합니다.' +
       (ended ? '' : '<br><b style="color:var(--bad)">아직 분기가 끝나지 않았습니다. 오늘까지의 기록으로 계산합니다.</b>') + '</p>' +
-      (ids.length ? '<div class="tbl-wrap"><table class="rank"><thead><tr><th class="l">이름</th><th>배정</th><th>제외</th><th>D</th><th>A</th><th>참여율</th><th class="l">수여</th></tr></thead><tbody>' +
+      // 사람마다 한 줄: 이름과 기록은 왼쪽, 수여 단계는 오른쪽 (휴대폰에서도 잘리지 않게)
+      (ids.length ? '<div class="q-list">' +
         ids.map(function (id) {
           var o = ev[id] || { assigned: 0, excused: 0, d: 0, a: 0, rate: 0, tier: '' }, cur = S.badges[id] && S.badges[id][key], val = cur ? cur.code : (o.tier === 'CARD' ? '' : o.tier);
-          return partRow(id) + '<tr><td class="l">' + esc(nameOf(id)) + (cur ? ' <span class="badge title">수여됨</span>' : '') + '</td><td>' + o.assigned + '</td><td>' + o.excused + '</td><td>' + o.d + '</td><td>' + o.a + '</td>' +
-            '<td>' + (o.d ? pct(o.rate) : '-') + '</td><td class="l"><select data-tier="' + id + '" style="width:auto;padding:3px 6px">' +
+          return partRow(id) + '<div class="q-row"><div class="q-who"><b>' + esc(nameOf(id)) + '</b>' + (cur ? ' <span class="badge title">수여됨</span>' : '') +
+            '<div class="q-nums">배정 ' + o.assigned + (o.excused ? ' · 제외 ' + o.excused : '') + ' · D ' + o.d + ' · A ' + o.a + ' · <b>' + (o.d ? pct(o.rate) : '-') + '</b></div></div>' +
+            '<select data-tier="' + id + '">' +
             [['', '수여 안 함'], ['CARD', '감사 카드'], ['BEGIN', '동행'], ['GROW', '자람'], ['BLOOM', '결실']].map(function (op) {
               return '<option value="' + op[0] + '"' + (op[0] === val ? ' selected' : '') + '>' + op[1] + (op[0] && op[0] === o.tier ? ' (제안)' : '') + '</option>';
-            }).join('') + '</select></td></tr>';
-        }).join('') + '</tbody></table></div>' : '<p class="muted small">이 분기에 배정 기록이 없습니다.</p>') +
+            }).join('') + '</select></div>';
+        }).join('') + '</div>' : '<p class="muted small">이 분기에 배정 기록이 없습니다.</p>') +
       '<label class="f">격려의 말 <span style="font-weight:500">(이번에 새로 수여하는 사람의 소식에 함께 보입니다)</span></label>' +
       '<textarea id="eq-note" placeholder="예: 이른 아침 자리를 꾸준히 지켜 주셔서 감사합니다."></textarea>' +
       '<div class="foot"><button class="btn" id="eq-close">닫기</button><button class="btn gold" id="eq-save">수여 저장</button></div>');
-    $('eq-y').onchange = $('eq-q').onchange = function () { evalQuarterModal($('eq-y').value, +$('eq-q').value); };
+    $('eq-prev').onclick = function () { if (yi > 0) evalQuarterModal(ys[yi - 1], q); };
+    $('eq-next').onclick = function () { if (yi < ys.length - 1) evalQuarterModal(ys[yi + 1], q); };
+    document.querySelectorAll('#modal [data-q]').forEach(function (b) {
+      b.onclick = function () { evalQuarterModal(y, +b.getAttribute('data-q')); };
+    });
     $('eq-close').onclick = function () { closeModal(); };
     $('eq-save').onclick = function () {
       var up = {}, add = 0, del = 0, note = $('eq-note').value.trim(), by = myName();
