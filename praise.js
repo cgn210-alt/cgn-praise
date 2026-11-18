@@ -1187,17 +1187,20 @@
       }).join('') + '</div>' +
       '<p class="small muted" style="margin:8px 0">' + (S.master ? '지기 지정은 총괄지기만 할 수 있습니다. 앱에 한 번 로그인한 사람만 목록에 나옵니다.' : '지기 지정은 총괄지기(' + esc(MASTER_NAME) + ')만 할 수 있습니다.') + '</p>';
     h += '<div class="row small doc"><span class="grow"><b>' + esc(MASTER_NAME) + '</b> <span class="muted">' + esc(MASTER_EMAIL) + '</span></span><span class="badge title">' + roleLabel('master') + '</span></div>';
-    var users = Object.keys(S.users).map(function (k) { return Object.assign({ uid: k }, S.users[k]); })
+    // 지정된 지기를 위에, 그다음 로그인한 사람을 가나다순으로. 총괄지기에게는 사람마다 '지정' 버튼
+    var users = Object.keys(S.users).map(function (k) { return Object.assign({ uid: k, nm: userName(k) }, S.users[k]); })
       .filter(function (u) { return (u.email || '') !== MASTER_EMAIL.toLowerCase(); })
-      .sort(function (a, b) { return (a.name || a.email || '').localeCompare(b.name || b.email || '', 'ko'); });
+      .sort(function (a, b) { return (userRole(b.uid) ? 1 : 0) - (userRole(a.uid) ? 1 : 0) || a.nm.localeCompare(b.nm, 'ko'); });
+    var shown = 0;
     users.forEach(function (u) {
-      var a = S.admins[u.uid], r = a ? (a.role === 'team' ? 'team' : 'ops') : '';
+      var r = userRole(u.uid);
       if (!S.master && !r) return;
-      h += '<div class="row small doc"><span class="grow"><b>' + esc(u.name || '-') + '</b> <span class="muted">' + esc(u.email) + '</span></span>' +
-        (S.master ? '<select data-role-of="' + u.uid + '" style="width:auto;padding:3px 8px">' + [['', '지기 아님'], ['ops', roleLabel('ops')], ['team', roleLabel('team')]].map(function (op) {
-          return '<option value="' + op[0] + '"' + (op[0] === r ? ' selected' : '') + '>' + op[1] + '</option>';
-        }).join('') + '</select>' : '<span class="badge title">' + roleLabel(r) + '</span>') + '</div>';
+      shown++;
+      h += '<div class="row small doc role-row"><span class="grow" style="min-width:0"><b>' + esc(u.nm) + '</b>' + (r ? ' <span class="badge title">' + roleLabel(r) + '</span>' : '') +
+        '<span class="muted role-mail">' + esc(u.email) + '</span></span>' +
+        (S.master ? '<button class="btn sm' + (r ? '' : ' pri') + '" data-act="role-pick" data-id="' + u.uid + '">' + (r ? '변경' : '지정') + '</button>' : '') + '</div>';
     });
+    if (S.master && !shown) h += '<p class="small muted" style="margin:8px 0 0">아직 앱에 로그인한 다른 사람이 없습니다. 지정할 사람이 회사메일로 한 번 로그인하면 여기에 나옵니다.</p>';
     h += '</div>';
 
     h += '<div class="card"><b>자료</b><p class="small muted" style="margin:4px 0 8px">명단 변경 파일(찬양팀_명단변경_날짜.json)을 고르면 바뀐 내용을 먼저 보여 주고, 적용하면 그 사람들의 파트 · 상태 · 메모 · 순서만 바뀝니다. ' +
@@ -1817,6 +1820,7 @@
     else if (act === 'print-open') openPrint();
     else if (act === 'issue-del') { if (confirm('이 지급 기록을 지울까요?')) db.ref(R + 'issues/' + id).remove().catch(fail); }
     else if (act === 'backup') backup();
+    else if (act === 'role-pick') pickRole(id);
     else if (act === 'doc-open') openDoc(+b.getAttribute('data-i'));
     else if (act === 'doc-down') downNote(DOCS[+b.getAttribute('data-i')]);
   });
@@ -1862,10 +1866,31 @@
       .then(function () { toast('기준을 저장했습니다.'); render(true); }).catch(fail);
   }
 
+  function userRole(uid) { var a = S.admins[uid]; return a ? (a.role === 'team' ? 'team' : 'ops') : ''; }
+  // 로그인 기록에 이름이 없으면 명단에서 같은 메일을 찾아 이름을 씀
+  function userName(uid) {
+    var u = S.users[uid] || {}, em = (u.email || '').toLowerCase();
+    if (u.name) return u.name;
+    for (var k in S.members) if ((S.members[k].email || '').toLowerCase() === em) return S.members[k].name;
+    return em.split('@')[0] || '-';
+  }
+  function pickRole(uid) {
+    var u = S.users[uid] || {}, r = userRole(uid);
+    modal('<h3 style="margin-bottom:2px">지기 지정</h3><p class="small muted" style="margin:0 0 12px"><b style="color:var(--navy)">' + esc(userName(uid)) + '</b> · ' + esc(u.email || '') + '</p>' +
+      '<div class="role-opts">' + ['ops', 'team', ''].map(function (k) {
+        return '<button class="role-opt' + (k === r ? ' on' : '') + (k ? '' : ' none') + '" data-r="' + k + '"><b>' + (k ? roleLabel(k) : '지기 아님') + (k === r ? ' <span>지금</span>' : '') + '</b>' +
+          '<span class="small">' + (k ? ROLES[k][2] : '일반 팀원으로 보기만 합니다') + '</span></button>';
+      }).join('') + '</div>' +
+      '<div class="foot"><button class="btn" id="rp-x">닫기</button></div>');
+    $('rp-x').onclick = function () { closeModal(); };
+    document.querySelectorAll('.role-opt').forEach(function (b) {
+      b.onclick = function () { var k = b.getAttribute('data-r'); closeModal(); if (k !== r) setRole(uid, k); };
+    });
+  }
   function setRole(uid, role) {
-    var u = S.users[uid] || {};
-    db.ref(R + 'admins/' + uid).set(role ? { email: u.email || '', name: u.name || '', role: role } : null)
-      .then(function () { toast((u.name || u.email) + ' 님: ' + (role ? roleLabel(role) + '로 지정했습니다.' : '지기에서 뺐습니다.')); }).catch(fail);
+    var u = S.users[uid] || {}, nm = userName(uid);
+    db.ref(R + 'admins/' + uid).set(role ? { email: u.email || '', name: nm, role: role } : null)
+      .then(function () { toast(nm + ' 님: ' + (role ? roleLabel(role) + '로 지정했습니다.' : '지기에서 뺐습니다.')); }).catch(fail);
   }
 
   function importFile(f) {

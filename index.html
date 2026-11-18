@@ -219,6 +219,15 @@
   .bcard.me { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(200,155,85,0.18); }
   .att-list .row { padding: 4px 0; border-bottom: 1px dashed var(--line); flex-wrap: nowrap; }
   .doc { padding: 6px 0; border-top: 1px dashed var(--line); flex-wrap: nowrap; }
+  .role-row .badge { margin-left: 4px; }
+  .role-mail { display: block; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .role-opts { display: grid; gap: 8px; }
+  .role-opt { width: 100%; min-width: 0; box-sizing: border-box; white-space: normal; text-align: left; border: 1px solid var(--line); background: #fff; border-radius: 12px; padding: 11px 14px; font: inherit; color: var(--ink, #182d42); cursor: pointer; }
+  .role-opt b { display: block; color: var(--navy); font-size: 15px; margin-bottom: 2px; }
+  .role-opt b span { font-size: 11px; background: var(--gold, #c89b55); color: #fff; border-radius: 6px; padding: 1px 6px; margin-left: 4px; vertical-align: 2px; }
+  .role-opt .small { color: var(--muted, #6f7787); line-height: 1.5; }
+  .role-opt.on { border: 2px solid var(--navy); background: #f7f3ea; }
+  .role-opt.none b { color: var(--muted, #6f7787); }
   .dl-where { margin: 8px 0 0; padding: 8px 10px; background: #f8f1e4; border-radius: 10px; }
   .dv-body { background: #e9e2d4; text-align: center; }
   .dv-page { display: block; margin: 0 auto 12px; background: #fff; box-shadow: 0 2px 10px rgba(12,29,48,0.15); max-width: 100%; height: auto; }
@@ -414,7 +423,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="praise.js?v=38"></script>
+<script src="praise.js?v=39"></script>
 <script>
   // 배포할 때 자동으로 만들어지는 version.json 의 날짜를 아래쪽에 표시
   fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (v) {
