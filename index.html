@@ -36,8 +36,17 @@
     color: #fff; padding: 18px 16px 14px;
   }
   .top-in { max-width: 960px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
-  .logo { width: 42px; height: 42px; border-radius: 12px; background: rgba(255,255,255,0.12); display: grid; place-items: center; flex: none; }
-  .top h1 { margin: 0; font-size: 20px; font-weight: 900; letter-spacing: -0.02em; }
+  .logo { height: 40px; width: auto; flex: none; }
+  .brand { min-width: 0; padding-left: 12px; border-left: 1px solid rgba(200,155,85,0.55); }
+  .top h1 { margin: 0; font-size: 19px; font-weight: 900; letter-spacing: -0.02em; white-space: nowrap; }
+  .top h1 span { color: #e3b871; }
+  @media (max-width: 480px) {
+    .logo { height: 32px; }
+    .brand { padding-left: 10px; }
+    .top h1 { font-size: 15px; }
+    .top .sub { font-size: 11px; }
+    .top .sub .en { display: none; }
+  }
   .top .sub { font-size: 12.5px; color: #c9d0f0; }
   .top .who { margin-left: auto; text-align: right; font-size: 12.5px; color: #dfe4fb; }
   .top .who button { margin-top: 2px; background: rgba(255,255,255,0.14); border: 0; color: #fff; border-radius: 8px; padding: 3px 10px; font-size: 12px; }
@@ -169,12 +178,10 @@
 
 <header class="top">
   <div class="top-in">
-    <div class="logo">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#f2a93b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-    </div>
-    <div>
-      <h1>CGN 찬양팀</h1>
-      <div class="sub">아침 예배 섬김 기록</div>
+    <img class="logo" src="amone-mark-white.png" alt="AM1" />
+    <div class="brand">
+      <h1>모든 아침, <span>오직 한 분께</span></h1>
+      <div class="sub">CGN 찬양팀<span class="en"> · All Morning For One</span></div>
     </div>
     <div class="who hidden" id="who"></div>
   </div>
