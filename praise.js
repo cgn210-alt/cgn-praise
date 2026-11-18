@@ -527,7 +527,7 @@
 
   // ----- 명단 -----
   function renderRoster() {
-    var all = sortedMembers(), cnt = { active: 0, guest: 0, parental: 0, leave: 0, retired: 0 };
+    var all = byPartName(sortedMembers()), cnt = { active: 0, guest: 0, parental: 0, leave: 0, retired: 0 };   // 파트별 가나다순
     all.forEach(function (m) { cnt[m.status || 'active'] = (cnt[m.status || 'active'] || 0) + 1; });
     var q = S.q.trim();
     var list = all.filter(function (m) { return (S.showRetired || m.status !== 'retired') && (!q || m.name.indexOf(q) >= 0); });
@@ -928,8 +928,16 @@
     MILES.concat([['YEAR']]).forEach(function (mi) {
       Object.keys(S.badges).forEach(function (id) { if (S.badges[id][y + '-' + mi[0]] && ids.indexOf(id) < 0) ids.push(id); });
     });
-    var order = sortedMembers().map(function (m) { return m.id; });
+    // 파트별로, 파트 안에서는 가나다순
+    var order = byPartName(sortedMembers()).map(function (m) { return m.id; });
     ids.sort(function (a, b) { return order.indexOf(a) - order.indexOf(b); });
+    var lastPart = null;
+    function partRow(id) {
+      var pk = partOf((S.members[id] || {}).part).key;
+      if (pk === lastPart) return '';
+      lastPart = pk;
+      return '<tr class="grp"><td class="l" colspan="7">' + partOf(pk).label + '</td></tr>';
+    }
     function yearOk(id) {
       var o = ev[id], bs = S.badges[id] || {};
       if (!o || !o.d) return false;
@@ -948,7 +956,7 @@
           function box(code, ok) {
             return '<td class="' + (ok ? 'ok-cell' : '') + '"><input type="checkbox" data-ms="' + id + '|' + code + '"' + (bs[y + '-' + code] ? ' checked' : '') + '></td>';
           }
-          return '<tr><td class="l">' + esc(nameOf(id)) + '</td><td>' + o.a + '</td><td>' + (o.d ? pct(o.rate) : '-') + '</td>' +
+          return partRow(id) + '<tr><td class="l">' + esc(nameOf(id)) + '</td><td>' + o.a + '</td><td>' + (o.d ? pct(o.rate) : '-') + '</td>' +
             MILES.map(function (mi) { return box(mi[0], o.a >= mi[1]); }).join('') + box('YEAR', yearOk(id)) + '</tr>';
         }).join('') + '</tbody></table></div>' : '<p class="muted small">이 해에 섬김 기록이 없습니다.</p>') +
       '<label class="f">격려의 말</label><textarea id="ey-note" placeholder="예: 한 해 동안 함께 걸어 주셔서 감사합니다."></textarea>' +
