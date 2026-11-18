@@ -67,9 +67,9 @@
     ['EM1-02-personal-letter.pdf', '감사 손편지', 'A4 세로 · 손글씨 네 줄'],
     ['EM1-03-commendation.pdf', '감사표창장', 'A4 세로 · 연말 완주'],
     ['EM1-print-set-A4.pdf', '감사 인쇄물 세 장 묶음', '감사장 · 손편지 · 표창장'],
-    ['AM1-evaluation-award-forms-A4.pdf', '분기 돌아보기 · 연말 수여 기록 양식', 'A4 가로 2쪽 · 예전 로고'],
-    ['AM1-detailed-infographic-A4.pdf', '상세 안내 인포그래픽', 'A4 가로 8쪽 · 예전 로고'],
-    ['AM1-overview-poster-A3.pdf', '요약 포스터', 'A3 세로 · 예전 로고']
+    ['EM1-reflection-award-forms-A4.pdf', '분기 동행 돌아봄 · 연말 수여 양식', 'A4 가로 2쪽'],
+    ['EM1-detailed-infographic-A4.pdf', '상세 안내 인포그래픽', 'A4 가로 8쪽'],
+    ['EM1-overview-poster-A3.pdf', '요약 포스터', 'A3 세로']
   ];
 
   var S = {
