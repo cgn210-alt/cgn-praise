@@ -536,7 +536,7 @@
     var h = '<div class="card"><div class="row"><b>전체 ' + (all.length - cnt.retired) + '명</b>' +
       '<span class="muted small">활동 ' + cnt.active + ' · 객원 ' + cnt.guest + ' · 육아휴직 ' + cnt.parental + ' · 휴직 ' + cnt.leave + (cnt.retired ? ' · 섬김종료 ' + cnt.retired : '') + '</span></div>' +
       '<div class="row" style="margin-top:8px"><input type="text" id="q" placeholder="이름 찾기" value="' + esc(S.q) + '" style="max-width:200px">' +
-      '<label class="small"><input type="checkbox" id="show-retired"' + (S.showRetired ? ' checked' : '') + '> 섬김종료 포함</label>' +
+      '<label class="small chk"><input type="checkbox" id="show-retired"' + (S.showRetired ? ' checked' : '') + '> 섬김종료 포함</label>' +
       '<span class="grow"></span>' + (S.ops ? '<button class="btn pri" data-act="mem-new">+ 인원 추가</button>' : '') + '</div></div>';
     return h + '<div id="roster-list">' + rosterList(all) + '</div>';
   }
@@ -1044,7 +1044,7 @@
       '<div class="row"><div class="grow"><label class="f">날짜</label><input type="date" id="pr-date" value="' + todayKey() + '"></div>' +
       '<div class="grow"><label class="f">수여기관</label><input type="text" id="pr-org" value="' + esc(s.printOrg || '') + '"></div>' +
       '<div class="grow"><label class="f">대표 / 담당자</label><input type="text" id="pr-signer" value="' + esc(s.printSigner || '') + '"></div></div>' +
-      '<label class="small" style="display:block;margin-top:8px"><input type="checkbox" id="pr-log" checked> 지급 기록에 남기기</label>' +
+      '<label class="small chk" style="margin-top:8px"><input type="checkbox" id="pr-log" checked> 지급 기록에 남기기</label>' +
       '<div class="foot" style="justify-content:flex-start"><button class="btn pri" data-act="print-open">인쇄 화면 열기</button></div></div>';
   }
   function openPrint() {
@@ -1326,7 +1326,7 @@
         return '<label><input type="checkbox" data-role="' + s[0] + '"' + (roles[s[0]] ? ' checked' : '') + '> ' + s[1] + '</label>';
       }).join('') + '</div>' +
       '<label class="f">메모 (휴직 기간, 특이사항 등)</label><textarea id="p-note">' + esc(m.note || '') + '</textarea>' +
-      '<label class="small" style="display:block;margin-top:10px"><input type="checkbox" id="p-hide"' + (m.hideBadges ? ' checked' : '') + '> 배지 비공개 (본인이 원할 때. 본인과 관리자만 봅니다)</label>' +
+      '<label class="small chk" style="margin-top:10px"><input type="checkbox" id="p-hide"' + (m.hideBadges ? ' checked' : '') + '> 배지 비공개 (본인이 원할 때. 본인과 관리자만 봅니다)</label>' +
       '<div class="foot">' + (id ? '<button class="btn bad" id="p-remove">삭제</button><span class="grow"></span>' : '') +
       '<button class="btn" id="p-close">닫기</button><button class="btn pri" id="p-save">저장</button></div>');
     function drawPhoto() {
