@@ -576,7 +576,7 @@
 
     var past = Object.keys(S.awards).sort().reverse().filter(function (k) { return k !== p.key; });
     if (past.length) {
-      h += '<div class="card"><b>지난 포상 기록</b>' + past.map(function (k) {
+      h += '<div class="card"><b>지난 감사 인사</b>' + past.map(function (k) {
         var a = S.awards[k];
         return '<div class="small" style="margin-top:6px"><b>' + esc(a.label || k) + '</b> · ' + Object.keys(a.winners || {}).map(nameOf).map(esc).join(', ') + '</div>';
       }).join('') + '</div>';
@@ -587,9 +587,9 @@
   function awardCard(p, rows) {
     var a = S.awards[p.key];
     if (!a && !S.admin) return '';
-    var h = '<div class="card award"><div class="row"><b>' + p.label + ' 우수 스텝</b><span class="grow"></span>' +
-      (S.admin ? '<button class="btn sm gold" data-act="award">' + (a ? '수정' : '선정하기') + '</button>' : '') + '</div>';
-    if (!a) return h + '<p class="small muted" style="margin:6px 0 0">아직 선정하지 않았습니다. 아래 기록을 참고해 선정할 수 있습니다.</p></div>';
+    var h = '<div class="card award"><div class="row"><b>' + p.label + ' 감사 인사</b><span class="grow"></span>' +
+      (S.admin ? '<button class="btn sm gold" data-act="award">' + (a ? '수정' : '감사 전하기') + '</button>' : '') + '</div>';
+    if (!a) return h + '<p class="small muted" style="margin:6px 0 0">특별히 고마웠던 분께 감사를 전하는 자리입니다. 상이나 순위가 아니라 고마움을 나누는 인사입니다.</p></div>';
     h += '<div class="who">' + Object.keys(a.winners || {}).map(function (id) {
       return '<div>' + photoBox(id) + esc(nameOf(id)) + '</div>';
     }).join('') + '</div>';
@@ -640,7 +640,7 @@
     }).join('') : '<p class="small muted" style="margin:6px 0 0">등록된 담당이 없습니다.</p>') + '</div>';
 
     var aw = Object.keys(S.awards).filter(function (k) { return S.awards[k].winners && S.awards[k].winners[id]; }).sort().reverse();
-    if (aw.length) h += '<div class="card award"><b>우수 스텝 선정</b>' + aw.map(function (k) { return '<div class="small" style="margin-top:4px">' + esc(S.awards[k].label || k) + '</div>'; }).join('') + '</div>';
+    if (aw.length) h += '<div class="card award"><b>받은 감사 인사</b>' + aw.map(function (k) { return '<div class="small" style="margin-top:4px">' + esc(S.awards[k].label || k) + '</div>'; }).join('') + '</div>';
 
     var hist = all.filter(function (e) { return e.date < t || e.date === t; })
       .filter(function (e) { return involvement(e, id); }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
@@ -880,7 +880,7 @@
         (r.award ? ' (' + esc(r.award) + ')' : '') + ' <span class="muted">' + esc(r.by || '') + '</span></span><button class="btn sm bad" data-act="issue-del" data-id="' + r.k + '">지우기</button></div>';
     }).join('') : '<p class="small muted" style="margin:6px 0 0">아직 기록이 없습니다. 맞춤 인쇄에서 "지급 기록에 남기기"를 켜면 쌓입니다.</p>') + '</div>';
 
-    h += '<div class="card"><b>관리자</b><p class="small muted" style="margin:4px 0 8px">관리자는 명단 · 사진 · 예배 담당 · 출석 · 배지 · 포상 · 문서 · 공지를 모두 고칠 수 있습니다. ' +
+    h += '<div class="card"><b>관리자</b><p class="small muted" style="margin:4px 0 8px">관리자는 명단 · 사진 · 예배 담당 · 출석 · 배지 · 감사 인사 · 문서 · 공지를 모두 고칠 수 있습니다. ' +
       (S.master ? '앱에 한 번 로그인한 사람만 목록에 나옵니다.' : '관리자 지정은 마스터(' + esc(MASTER_NAME) + ')만 할 수 있습니다.') + '</p>';
     h += '<div class="row small" style="margin-bottom:4px"><b>' + esc(MASTER_NAME) + '</b><span class="muted">' + esc(MASTER_EMAIL) + ' · 마스터</span></div>';
     var users = Object.keys(S.users).map(function (k) { return Object.assign({ uid: k }, S.users[k]); })
@@ -894,7 +894,7 @@
     });
     h += '</div>';
 
-    h += '<div class="card"><b>자료</b><p class="small muted" style="margin:4px 0 8px">기초자료 파일(찬양팀_기초자료_2026.json)을 불러오면 명단과 예배 기록이 그 내용으로 바뀝니다. 사진 · 포상 · 기준은 그대로 둡니다.</p>' +
+    h += '<div class="card"><b>자료</b><p class="small muted" style="margin:4px 0 8px">기초자료 파일(찬양팀_기초자료_2026.json)을 불러오면 명단과 예배 기록이 그 내용으로 바뀝니다. 사진 · 배지 · 감사 인사 · 기준은 그대로 둡니다.</p>' +
       '<div class="row"><label class="btn">기초자료 불러오기<input type="file" id="imp" accept=".json,application/json" class="hidden"></label>' +
       '<button class="btn" data-act="backup">전체 백업 내려받기</button></div></div>';
     return h;
@@ -1182,14 +1182,14 @@
     var ids = rows.map(function (r) { return r.id; });
     Object.keys(win).forEach(function (k) { if (ids.indexOf(k) < 0) ids.push(k); });
     var byId = {}; rows.forEach(function (r) { byId[r.id] = r; });
-    modal('<h3>' + p.label + ' 우수 스텝</h3><p class="small muted">가나다순으로 보입니다. 포상할 사람을 고르고 격려의 말을 남겨 주세요.</p>' +
+    modal('<h3>' + p.label + ' 감사 인사</h3><p class="small muted">가나다순으로 보입니다. 이 기간에 특별히 고마웠던 분을 고르고 감사의 말을 남겨 주세요. 팀 모두에게 보입니다.</p>' +
       '<div style="max-height:300px;overflow-y:auto">' + ids.map(function (id) {
         var r = byId[id];
         return '<label class="row small" style="margin:4px 0;flex-wrap:nowrap"><input type="checkbox" data-win="' + id + '"' + (win[id] ? ' checked' : '') + '>' +
           avatar(id, 24) + '<b>' + esc(nameOf(id)) + '</b><span class="muted">' + (r ? r.total + '회' + (p.to >= cfg().pointStart ? ' · ' + r.points + '점' : '') : '') + '</span></label>';
       }).join('') + '</div>' +
-      '<label class="f">격려의 말</label><textarea id="w-msg" placeholder="예: 한 해 동안 이른 아침 자리를 지켜 주셔서 감사합니다.">' + esc(a.message || '') + '</textarea>' +
-      '<div class="foot">' + (S.awards[p.key] ? '<button class="btn bad" id="w-del">선정 취소</button><span class="grow"></span>' : '') +
+      '<label class="f">감사의 말</label><textarea id="w-msg" placeholder="예: 한 해 동안 이른 아침 자리를 지켜 주셔서 감사합니다.">' + esc(a.message || '') + '</textarea>' +
+      '<div class="foot">' + (S.awards[p.key] ? '<button class="btn bad" id="w-del">감사 인사 지우기</button><span class="grow"></span>' : '') +
       '<button class="btn" id="w-close">닫기</button><button class="btn gold" id="w-save">저장</button></div>');
     $('w-close').onclick = function () { closeModal(); };
     $('w-save').onclick = function () {
@@ -1200,7 +1200,7 @@
         .then(function () { closeModal(); toast('저장했습니다.'); }).catch(fail);
     };
     if (S.awards[p.key]) $('w-del').onclick = function () {
-      if (!confirm(p.label + ' 우수 스텝 선정을 취소할까요?')) return;
+      if (!confirm(p.label + ' 감사 인사를 지울까요?')) return;
       db.ref(R + 'awards/' + p.key).remove().then(function () { closeModal(); }).catch(fail);
     };
   }
