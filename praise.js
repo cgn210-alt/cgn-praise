@@ -1171,10 +1171,10 @@
       '<div class="foot" style="justify-content:flex-start"><button class="btn pri" data-act="s-save">기준 저장</button></div></div>';
 
     h += '<div class="card"><b>문서함</b><p class="small muted" style="margin:4px 0 8px">손글씨로 채우는 고정 양식과 안내 자료입니다. 열어서 A4 · 실제 크기(100%)로 인쇄하세요. 감사장 · 표창장은 160~200g, 손편지는 100~120g 용지를 권합니다.</p>' +
-      DOCS.map(function (d) {
+      DOCS.map(function (d, i) {
         return '<div class="row small doc"><span class="grow"><b>' + d[1] + '</b> <span class="muted">' + d[2] + '</span></span>' +
-          '<a class="btn sm" href="docs/' + d[0] + '" target="_blank" rel="noopener">열기</a><a class="btn sm" href="docs/' + d[0] + '" download>내려받기</a></div>';
-      }).join('') + '</div>';
+          '<button class="btn sm" data-act="doc-open" data-i="' + i + '">열기</button><a class="btn sm" href="docs/' + d[0] + '" download="' + docName(d) + '" data-act="doc-down" data-i="' + i + '">내려받기</a></div>';
+      }).join('') + '<p class="small muted dl-where">내려받은 파일은 휴대폰은 <b>내 파일 → 다운로드(Download)</b> 폴더, PC는 <b>다운로드</b> 폴더에 저장됩니다.</p></div>';
     h += printPanel();
     var iss = Object.keys(S.issues).map(function (k) { return Object.assign({ k: k }, S.issues[k]); }).sort(function (a, b) { return (b.at || 0) - (a.at || 0); });
     h += '<div class="card"><b>지급 기록</b> <span class="small muted">' + iss.length + '건</span>' + (iss.length ? iss.slice(0, 60).map(function (r) {
@@ -1389,6 +1389,54 @@
     if (!m) return;
     m.remove();
     if (!silent && !$('modal') && !$('modal2') && history.state && history.state.modal) { skipPop = true; history.back(); }
+  }
+
+  // ----- 문서함: 앱 안에서 PDF 보기 (휴대폰 크롬은 PDF 를 새 창에서 못 열고 바로 내려받기 때문) -----
+  var PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+  function docName(d) { return 'EM1_' + d[1].replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_') + '.pdf'; }
+  function loadPdfJs(cb) {
+    if (window.pdfjsLib) return cb();
+    var s = document.createElement('script');
+    s.src = PDFJS + 'pdf.min.js';
+    s.onload = function () { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js'; cb(); };
+    s.onerror = function () { cb('fail'); };
+    document.head.appendChild(s);
+  }
+  function openDoc(i) {
+    var d = DOCS[i], url = 'docs/' + d[0];
+    modal('<div class="fs-head"><div class="row" style="flex-wrap:nowrap"><div class="grow" style="min-width:0"><h3 style="margin:0">' + d[1] + '</h3><div class="small muted">' + d[2] + '</div></div>' +
+      '<button class="fs-x" id="dv-x" aria-label="닫기">✕</button></div></div>' +
+      '<div class="fs-body dv-body" id="dv-body"><p class="muted small" id="dv-msg">파일을 여는 중…</p></div>' +
+      '<div class="fs-foot"><div class="row" style="flex-wrap:nowrap"><a class="btn grow" style="justify-content:center;text-align:center" href="' + url + '" target="_blank" rel="noopener">새 창에서 열기</a>' +
+      '<a class="btn pri grow" style="justify-content:center;text-align:center" href="' + url + '" download="' + docName(d) + '" id="dv-down">내려받기</a></div>' +
+      '<p class="small muted" style="margin:6px 0 0;text-align:center">인쇄는 내려받은 파일을 열어 A4 · 실제 크기(100%)로</p></div>', 'modal', 'full');
+    $('dv-x').onclick = function () { closeModal(); };
+    $('dv-down').onclick = function () { downNote(d); };
+    loadPdfJs(function (err) {
+      var body = $('dv-body');
+      if (!body) return;
+      if (err) { $('dv-msg').textContent = '보기 프로그램을 불러오지 못했습니다. 아래 "내려받기"로 받아서 열어 주세요.'; return; }
+      window.pdfjsLib.getDocument(url).promise.then(function (pdf) {
+        if (!$('dv-body')) return;
+        $('dv-msg').textContent = '전체 ' + pdf.numPages + '쪽 · 두 손가락으로 크게 볼 수 있습니다.';
+        var w = body.clientWidth - 32, ratio = Math.min(window.devicePixelRatio || 1, 2);
+        var n = 0;
+        (function next() {
+          if (++n > pdf.numPages || !$('dv-body')) return;
+          pdf.getPage(n).then(function (pg) {
+            var v1 = pg.getViewport({ scale: 1 }), sc = w / v1.width, vp = pg.getViewport({ scale: sc * ratio });
+            var cv = document.createElement('canvas');
+            cv.width = vp.width; cv.height = vp.height; cv.className = 'dv-page';
+            cv.style.width = Math.floor(v1.width * sc) + 'px';
+            body.appendChild(cv);
+            pg.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise.then(next);
+          });
+        })();
+      }).catch(function () { var m = $('dv-msg'); if (m) m.textContent = '파일을 열지 못했습니다. 아래 "내려받기"로 받아서 열어 주세요.'; });
+    });
+  }
+  function downNote(d) {
+    toast(docName(d) + ' → 다운로드 폴더에 저장');
   }
 
   function editNotice() {
@@ -1769,6 +1817,8 @@
     else if (act === 'print-open') openPrint();
     else if (act === 'issue-del') { if (confirm('이 지급 기록을 지울까요?')) db.ref(R + 'issues/' + id).remove().catch(fail); }
     else if (act === 'backup') backup();
+    else if (act === 'doc-open') openDoc(+b.getAttribute('data-i'));
+    else if (act === 'doc-down') downNote(DOCS[+b.getAttribute('data-i')]);
   });
   document.addEventListener('input', function (ev) {
     if (ev.target.id === 'q') { S.q = ev.target.value; if ($('roster-list')) $('roster-list').innerHTML = rosterList(); }
