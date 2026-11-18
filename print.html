@@ -99,7 +99,7 @@
 <script>
   (function () {
     var data = null;
-    try { data = JSON.parse(localStorage.getItem('am1-print') || 'null'); localStorage.removeItem('am1-print'); } catch (e) {}
+    try { data = JSON.parse(localStorage.getItem('em1-print') || 'null'); localStorage.removeItem('em1-print'); } catch (e) {}
     // 넘겨받은 값이 없으면 빈 양식 (print.html?form=letter 처럼 양식 하나만 볼 수도 있음)
     if (!data) data = { type: new URLSearchParams(location.search).get('form') || '' };
     document.querySelectorAll('[data-k]').forEach(function (el) {

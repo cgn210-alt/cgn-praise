@@ -955,7 +955,7 @@
   function openPrint() {
     var mid = $('pr-mem').value, m = S.members[mid], type = $('pr-type').value, date = $('pr-date').value || todayKey();
     var data = { type: type, name: m ? m.name : '', role: $('pr-role').value.trim(), award: $('pr-award').value.trim(), date: koDate(date), org: $('pr-org').value.trim(), signer: $('pr-signer').value.trim() };
-    try { localStorage.setItem('am1-print', JSON.stringify(data)); } catch (e) {}
+    try { localStorage.setItem('em1-print', JSON.stringify(data)); } catch (e) {}
     window.open('print.html', '_blank');
     var ss = S.settings || {};
     if ((ss.printOrg || '') !== data.org || (ss.printSigner || '') !== data.signer) db.ref(R + 'settings').update({ printOrg: data.org || null, printSigner: data.signer || null }).catch(function () {});
