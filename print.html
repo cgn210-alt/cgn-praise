@@ -10,11 +10,31 @@
 <style>
   @page { size: A4; margin: 0; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: #e5e8ec; color: #182d42; font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif; }
-  .toolbar { max-width: 210mm; margin: 16px auto; padding: 16px 18px; background: #fff; font-size: 14px; line-height: 1.7; border-radius: 10px; }
-  .toolbar button { padding: 9px 16px; background: #182d42; color: #fff; border: 0; border-radius: 8px; cursor: pointer; font: inherit; margin-right: 6px; }
-  .toolbar button.sub { background: #fff; color: #182d42; border: 1px solid #c9cdd0; }
-  .page { width: 210mm; height: 297mm; margin: 12mm auto; background: #fff; position: relative; padding: 18mm 23mm; overflow: hidden; }
+  body {
+    margin: 0; color: #182d42; font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+    background: radial-gradient(700px 480px at 12% 100%, rgba(200,155,85,0.22), transparent 70%), linear-gradient(180deg, #fffdf8 0%, #f8f1e4 100%);
+    background-attachment: fixed; min-height: 100vh;
+  }
+  /* 위쪽 띠: 로고 · 제목 · 인쇄 */
+  .bar { position: sticky; top: 0; z-index: 10; background: linear-gradient(135deg, #0c1d30 0%, #122a42 50%, #1f3d5e 100%); border-bottom: 2px solid rgba(200,155,85,0.6); color: #fff; }
+  .bar-in { max-width: 860px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+  .bar img { height: 30px; }
+  .bar .ttl { border-left: 1px solid rgba(200,155,85,0.55); padding-left: 12px; line-height: 1.3; }
+  .bar .ttl b { font-size: 16px; }
+  .bar .ttl small { display: block; font-size: 12px; color: #cfd6df; }
+  .bar .print { margin-left: auto; background: #c89b55; color: #fff; border: 0; border-radius: 10px; padding: 9px 16px; font: inherit; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  /* 양식 고르기와 안내 */
+  .tools { max-width: 860px; margin: 14px auto 0; padding: 0 16px; }
+  .seg { display: flex; border: 1px solid #ecdfc8; border-radius: 12px; overflow: hidden; background: #fffdf9; }
+  .seg button { flex: 1; border: 0; background: none; padding: 9px 6px; font: inherit; font-weight: 700; color: #6f7787; cursor: pointer; white-space: nowrap; }
+  .seg button.on { background: #122a42; color: #fff; }
+  .tip { margin-top: 10px; background: #fffdf9; border: 1px solid #ecdfc8; border-radius: 12px; padding: 10px 14px; font-size: 13.5px; line-height: 1.7; color: #4a5a6e; }
+  .tip b { color: #122a42; }
+  .tip .k { display: inline-block; background: #f3e6cc; color: #84591f; border-radius: 6px; padding: 0 6px; font-size: 12.5px; font-weight: 700; margin-right: 4px; }
+  html, body { overflow-x: hidden; }
+  #pages { padding: 6px 0 40px; }
+  .page { width: 210mm; height: 297mm; margin: 12mm auto; background: #fff; position: relative; padding: 18mm 23mm; overflow: hidden; box-shadow: 0 6px 24px rgba(18,42,66,0.12); border-radius: 2px; }
+  [contenteditable]:hover { outline: 1px dashed rgba(200,155,85,0.7); }
   .border { position: absolute; inset: 13.4mm; border: 1px solid #b58a42; pointer-events: none; }
   .border:after { content: ""; position: absolute; inset: 2mm; border: 1px solid #d9d1c4; }
   .logo { display: block; width: 53mm; height: auto; margin: 0 auto; }
@@ -40,8 +60,10 @@
   [contenteditable]:focus { outline: 1px dashed #b58a42; background: #fffaf0; }
   @media print {
     body { background: #fff; }
-    .toolbar { display: none; }
-    .page { margin: 0; break-after: page; }
+    .bar, .tools { display: none; }
+    #pages { padding: 0; zoom: 1 !important; }
+    .page { margin: 0; break-after: page; box-shadow: none; border-radius: 0; }
+    [contenteditable]:hover { outline: 0; }
     .page:last-child { break-after: auto; }
     [contenteditable]:focus { outline: 0; background: transparent; }
   }
@@ -49,12 +71,23 @@
 </head>
 <body>
 
-<div class="toolbar">
-  <b>EM 1 감사 인쇄 양식</b><br>
-  이름 · 역할 · 날짜 · 본문은 글자를 눌러 고칠 수 있습니다. 손편지의 줄에는 직접 입력하거나 출력 후 손글씨로 적습니다.<br>
-  인쇄 설정: A4 세로, 배율 100%, 여백 없음, 머리글 · 바닥글 끄기.<br>
-  <button onclick="window.print()">인쇄 또는 PDF 저장</button><button class="sub" id="show-all">세 양식 모두 보기</button>
+<header class="bar"><div class="bar-in">
+  <img src="em1-mark-white.png" alt="EM 1">
+  <div class="ttl"><b>감사 인쇄 양식</b><small id="who-line">CGN 찬양팀</small></div>
+  <button class="print" onclick="window.print()">인쇄 · PDF 저장</button>
+</div></header>
+
+<div class="tools">
+  <div class="seg" id="forms">
+    <button data-show="appreciation">감사장</button><button data-show="letter">손편지</button><button data-show="commendation">표창장</button><button data-show="">세 장 모두</button>
+  </div>
+  <div class="tip">
+    <span class="k">고치기</span>이름 · 역할 · 날짜 · 본문은 <b>글자를 눌러</b> 바로 고칠 수 있습니다. 손편지의 줄에는 직접 입력하거나 출력 후 손글씨로 적습니다.<br>
+    <span class="k">인쇄</span><b>A4 세로 · 배율 100% · 여백 없음 · 머리글/바닥글 끄기</b>로 인쇄하세요. 휴대폰 화면에서는 양식이 줄어 보이지만 인쇄는 원래 크기로 나옵니다.
+  </div>
 </div>
+
+<div id="pages">
 
 <section class="page" data-form="appreciation">
   <div class="border"></div>
@@ -96,6 +129,8 @@
   <div class="foot">EM 1 | Every morning, for the One alone</div>
 </section>
 
+</div>
+
 <script>
   (function () {
     var data = null;
@@ -106,14 +141,30 @@
       var v = data[el.getAttribute('data-k')];
       if (v) el.textContent = v;
     });
-    if (data.type) {
-      document.querySelectorAll('.page').forEach(function (p) { p.classList.toggle('hidden', p.getAttribute('data-form') !== data.type); });
-      if (data.name) document.title = 'EM1 ' + ({ appreciation: '감사장', letter: '감사 손편지', commendation: '감사표창장' }[data.type] || '') + ' - ' + data.name;
+    var NAMES = { appreciation: '감사장', letter: '감사 손편지', commendation: '감사표창장' };
+    // 양식 하나 또는 세 장 모두 보기
+    function show(type) {
+      document.querySelectorAll('.page').forEach(function (p) { p.classList.toggle('hidden', !!type && p.getAttribute('data-form') !== type); });
+      document.querySelectorAll('#forms [data-show]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-show') === (type || '')); });
+      document.title = 'EM 1 ' + (NAMES[type] || '감사 인쇄 양식') + (data.name ? ' - ' + data.name : '');
+      fit();
     }
+    document.querySelectorAll('#forms [data-show]').forEach(function (b) {
+      b.onclick = function () { show(b.getAttribute('data-show')); };
+    });
+    if (data.name) document.getElementById('who-line').textContent = data.name + ' 님' + (data.role ? ' · ' + data.role : '');
+    // 휴대폰처럼 좁은 화면에서는 A4 양식을 화면 폭에 맞게 줄여 보여 줌 (인쇄는 원래 크기)
+    function fit() {
+      var pg = document.querySelector('.page:not(.hidden)'), box = document.getElementById('pages');
+      if (!pg) return;
+      box.style.zoom = 1;
+      var vw = Math.min(window.innerWidth, screen.width || window.innerWidth);   // 넓은 양식 때문에 화면이 늘어나도 기기 폭 기준
+      var s = Math.min(1, (vw - 16) / pg.offsetWidth);
+      box.style.zoom = s < 1 ? s.toFixed(3) : '';
+    }
+    window.addEventListener('resize', fit);
+    show(data.type || '');
   })();
-  document.getElementById('show-all').onclick = function () {
-    document.querySelectorAll('.page').forEach(function (p) { p.classList.remove('hidden'); });
-  };
 </script>
 </body>
 </html>
