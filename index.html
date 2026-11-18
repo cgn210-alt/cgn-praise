@@ -170,7 +170,13 @@
 
   /* 배지 */
   .bimg { display: inline-block; border-radius: 50%; flex: none; object-fit: contain; vertical-align: middle; }
-  .bimg.card { background: var(--gold-l); color: #84591f; font-weight: 700; display: inline-grid; place-items: center; border: 1px dashed var(--gold); }
+  .bimg.card { background: var(--gold-l); color: #7a4f14; display: inline-grid; place-items: center; border: 1.5px solid var(--gold); }
+  .bimg.card svg { width: 62%; height: 62%; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linejoin: round; }
+  .bhit { display: inline-flex; cursor: pointer; border-radius: 50%; }
+  .bhit:hover .bimg, .bhit:hover .slot { box-shadow: 0 0 0 3px rgba(200,155,85,0.35); }
+  .meaning { text-align: center; }
+  .meaning .mbig { display: inline-block; margin-bottom: 6px; }
+  .meaning h3 { margin: 4px 0 0; }
   .coll { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
   .coll .slot { border-radius: 50%; border: 1.5px dashed #d8c7a6; color: #b9a686; font-size: 10px; display: inline-grid; place-items: center; flex: none; }
   .coll .sep { width: 1px; height: 24px; background: var(--line); margin: 0 2px; }
@@ -240,6 +246,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="praise.js?v=8"></script>
+<script src="praise.js?v=9"></script>
 </body>
 </html>

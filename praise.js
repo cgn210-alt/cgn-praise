@@ -22,11 +22,26 @@
   // 직임 입력 칸에서 고를 수 있는 이름 (직접 적어도 됩니다)
   var TITLES = ['총괄', '총무', '보컬 파트장', '남성 보컬 파트장', '여성 보컬 파트장', '건반 파트장', '리듬 파트장', '음향 감독', '영상기술 파트장', '자막 파트장'];
   var DOW = '일월화수목금토';
+  // 감사 카드(시작 · 복귀 감사) 아이콘
+  var LETTER = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3.5 7l8.5 6.5L20.5 7"/></svg>';
+  // 배지의 뜻 (guide.html 과 같은 내용. 성경 본문은 디자인 영감이며 직접 인용하지 않음)
+  var MEANING = {
+    1: ['씨앗의 자람', '마가복음 4:26-29 · 시편 1:3', '작은 씨앗이 자라 나무가 되듯, 이른 아침 꾸준히 이어 온 섬김을 기억합니다.'],
+    2: ['공동체를 밝히는 빛', '마태복음 5:14-16', '각자의 자리에서 예배를 밝혀 준 섬김을 기억합니다.'],
+    3: ['주님 안에 거함과 열매', '요한복음 15:5', '주님 안에 머물며 함께 맺어 가는 열매를 기억합니다.'],
+    4: ['함께 거두는 수고', '시편 126:5-6', '함께 뿌리고 함께 거두어 온 한 해의 수고를 기억합니다.']
+  };
+  var TIER_DESC = {
+    BEGIN: '동행 · 약속한 일정의 70% 이상을 함께했습니다.',
+    GROW: '자람 · 약속한 일정의 85% 이상을 함께했습니다.',
+    BLOOM: '결실 · 약속한 일정의 95% 이상을 함께했습니다.',
+    CARD: '감사 카드 · 약속한 일정이 13회보다 적은 분기에, 시작하거나 다시 돌아와 함께한 걸음에 감사를 전합니다.'
+  };
   // 사진이 없을 때 보이는 사람 모양 (이름 글자와 겹치지 않게)
   var PERSON = '<svg class="ph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="4.2"/><path d="M3.5 22c0-4.7 3.8-8 8.5-8s8.5 3.3 8.5 8z"/></svg>';
   var R = 'praise/';
 
-  // AM1 배지 (guide.html 과 같은 기준). 분기 참여율 = 실제 수행 A / 개인 평가대상 일정 D
+  // AM1 배지 (guide.html 과 같은 기준). 분기 참여율 = 실제 수행 A / 약속한 일정 D
   var TIERS = [['BLOOM', '결실', 95], ['GROW', '자람', 85], ['BEGIN', '동행', 70]];
   var TIER_LABEL = { BEGIN: '동행', GROW: '자람', BLOOM: '결실', CARD: '감사 카드' };
   var QBADGE = {
@@ -45,7 +60,7 @@
     ['AM1-02-personal-letter.pdf', '감사 손편지', 'A4 세로 · 손글씨 네 줄'],
     ['AM1-03-commendation.pdf', '감사표창장', 'A4 세로 · 연말 완주'],
     ['AM1-print-set-A4.pdf', '감사 인쇄물 세 장 묶음', '감사장 · 손편지 · 표창장'],
-    ['AM1-evaluation-award-forms-A4.pdf', '분기 평가 · 연말 수여 기록 양식', 'A4 가로 2쪽'],
+    ['AM1-evaluation-award-forms-A4.pdf', '분기 돌아보기 · 연말 수여 기록 양식', 'A4 가로 2쪽'],
     ['AM1-detailed-infographic-A4.pdf', '상세 안내 인포그래픽', 'A4 가로 8쪽'],
     ['AM1-overview-poster-A3.pdf', '요약 포스터', 'A3 세로']
   ];
@@ -181,7 +196,7 @@
     return t;
   }
 
-  // ---------- 배지 평가 ----------
+  // ---------- 배지: 분기 돌아보기 ----------
   function quarterRange(y, q) { return { from: y + '-' + pad(q * 3 - 2) + '-01', to: y + '-' + pad(q * 3) + '-31' }; }
   function suggestTier(o) {
     if (!o.d) return '';
@@ -190,7 +205,7 @@
     for (var i = 0; i < TIERS.length; i++) if (p >= TIERS[i][2]) return TIERS[i][0];
     return '';
   }
-  // 분기 사람별: 배정 / 승인 제외 / 불참 / 실제 수행 A / 평가대상 D (오늘까지 지난 예배)
+  // 분기 사람별: 배정 / 승인 제외 / 불참 / 실제 수행 A / 약속한 일정 D (오늘까지 지난 예배)
   function evalQuarter(y, q) {
     var r = quarterRange(y, q), out = {};
     pastEvents(r.from, r.to).forEach(function (ev) {
@@ -239,7 +254,7 @@
   }
   function badgeImg(key, rec, size) {
     var bi = badgeInfo(key, rec), st = 'width:' + size + 'px;height:' + size + 'px';
-    if (!bi.img) return '<span class="bimg card" style="' + st + ';font-size:' + Math.max(9, size / 4) + 'px" title="' + esc(bi.title) + '">감사</span>';
+    if (!bi.img) return '<span class="bimg card" style="' + st + '" title="' + esc(bi.title) + '">' + LETTER.replace('<svg ', '<svg style="width:' + Math.round(size * 0.6) + 'px;height:' + Math.round(size * 0.6) + 'px" ') + '</span>';
     return '<img class="bimg" src="' + bi.img + '" style="' + st + '" alt="' + esc(bi.title) + '" title="' + esc(bi.title + (bi.sub ? ' · ' + bi.sub : '')) + '">';
   }
   // 다른 사람에게 보여도 되는 배지 (본인이 원하지 않으면 관리자가 '배지 비공개'로 바꿉니다)
@@ -255,15 +270,17 @@
   }
   // 한 해의 배지 수집판: 분기 4칸 + 누적 3칸 + 연말 1칸
   function collection(id, y, size) {
+    // 배지를 누르면 관리자는 수정 · 취소, 팀원은 배지의 뜻. 빈칸은 관리자만 눌러 수여
     var bs = visibleBadges(id), h = '<div class="coll">';
+    function wrap(k, inner) { return '<span class="bhit" data-act="badge" data-id="' + id + '|' + k + '">' + inner + '</span>'; }
     [1, 2, 3, 4].forEach(function (q) {
-      var k = y + '-Q' + q;
-      h += bs[k] ? badgeImg(k, bs[k], size) : '<span class="slot" style="width:' + size + 'px;height:' + size + 'px">' + q + '분기</span>';
+      var k = y + '-Q' + q, slot = '<span class="slot" style="width:' + size + 'px;height:' + size + 'px">' + q + '분기</span>';
+      h += bs[k] ? wrap(k, badgeImg(k, bs[k], size)) : S.admin ? '<span class="bhit" data-act="slot" data-id="' + id + '|' + k + '" title="배지 주기">' + slot + '</span>' : slot;
     });
     h += '<span class="sep"></span>';
     MILES.concat([['YEAR']]).forEach(function (mi) {
       var k = y + '-' + mi[0];
-      if (bs[k]) h += badgeImg(k, bs[k], Math.round(size * 0.8));
+      if (bs[k]) h += wrap(k, badgeImg(k, bs[k], Math.round(size * 0.8)));
     });
     return h + '</div>';
   }
@@ -624,7 +641,7 @@
     if (bkeys.length) {
       h += '<div class="card"><b>받은 배지와 축하</b>' + bkeys.map(function (k) {
         var bi = badgeInfo(k, myB[k]);
-        return '<div class="row" style="flex-wrap:nowrap;align-items:flex-start;gap:10px;margin-top:12px">' + badgeImg(k, myB[k], 44) +
+        return '<div class="row" style="flex-wrap:nowrap;align-items:flex-start;gap:10px;margin-top:12px"><span class="bhit" data-act="meaning" data-id="' + id + '|' + k + '">' + badgeImg(k, myB[k], 44) + '</span>' +
           '<div class="grow" style="min-width:0"><b>' + esc(bi.title) + '</b> <span class="small muted">' + esc(bi.sub) + '</span>' +
           (myB[k].note ? '<div class="msg small">' + esc(myB[k].note) + '</div>' : '') + cheerBlock(id, k) + '</div></div>';
       }).join('') + '</div>';
@@ -696,14 +713,14 @@
       '<div class="row" style="margin-top:10px"><select id="b-year" style="width:auto">' + Object.keys(years).sort().map(function (yy) {
         return '<option' + (yy === y ? ' selected' : '') + '>' + yy + '</option>';
       }).join('') + '</select><a class="btn sm" href="guide.html">배지 안내 보기</a><span class="grow"></span>' +
-      (S.admin ? '<button class="btn sm gold" data-act="eval-q">분기 평가 · 수여</button><button class="btn sm" data-act="eval-y">누적 · 연말 배지</button>' : '') + '</div></div>';
+      (S.admin ? '<button class="btn sm gold" data-act="eval-q">분기 돌아보기 · 배지 수여</button><button class="btn sm" data-act="eval-y">누적 · 연말 배지</button>' : '') + '</div></div>';
 
     var feed = badgeFeed(15);
     h += '<h2 class="sec">수여 소식</h2>';
-    if (!feed.length) h += '<div class="card muted small">아직 수여된 배지가 없습니다. 분기 평가가 끝나면 이곳에서 함께 축하합니다.</div>';
+    if (!feed.length) h += '<div class="card muted small">아직 수여된 배지가 없습니다. 분기를 함께 돌아본 뒤 이곳에서 축하합니다.</div>';
     feed.forEach(function (f) {
       var bi = badgeInfo(f.key, f.rec);
-      h += '<div class="card feed"><div class="row" style="flex-wrap:nowrap;align-items:flex-start;gap:12px">' + badgeImg(f.key, f.rec, 64) +
+      h += '<div class="card feed"><div class="row" style="flex-wrap:nowrap;align-items:flex-start;gap:12px"><span class="bhit" data-act="meaning" data-id="' + f.id + '|' + f.key + '" title="배지의 뜻 보기">' + badgeImg(f.key, f.rec, 64) + '</span>' +
         '<div class="grow" style="min-width:0"><div><b>' + esc(nameOf(f.id)) + '</b> 님 · ' + esc(bi.title) + '</div>' +
         '<div class="small muted">' + esc(bi.sub) + (f.rec.at ? ' · ' + fullDate(dateKeyOf(f.rec.at)) : '') + '</div>' +
         (f.rec.note ? '<div class="msg small">' + esc(f.rec.note) + '</div>' : '') + cheerBlock(f.id, f.key) + '</div></div></div>';
@@ -720,7 +737,7 @@
     return h + '</div>';
   }
 
-  // 관리자: 분기 평가와 수여
+  // 관리자: 분기 돌아보기와 배지 수여
   function lastQuarter() {
     var t = todayKey(), cq = Math.ceil(+t.slice(5, 7) / 3), y = +t.slice(0, 4);
     return cq === 1 ? [String(y - 1), 4] : [String(y), cq - 1];
@@ -738,14 +755,14 @@
     Object.keys(S.badges).forEach(function (id) { if (S.badges[id][key] && ids.indexOf(id) < 0) ids.push(id); });
     var order = sortedMembers().map(function (m) { return m.id; });
     ids.sort(function (a, b) { return order.indexOf(a) - order.indexOf(b); });
-    modal('<h3>분기 평가 · 배지 수여</h3>' +
+    modal('<h3>분기 돌아보기 · 배지 수여</h3>' +
       '<div class="row"><select id="eq-y" style="width:auto">' + yearChoices(y).map(function (v) { return '<option' + (v === y ? ' selected' : '') + '>' + v + '</option>'; }).join('') + '</select>' +
       '<select id="eq-q" style="width:auto">' + [1, 2, 3, 4].map(function (v) { return '<option value="' + v + '"' + (v === +q ? ' selected' : '') + '>' + v + '분기</option>'; }).join('') + '</select></div>' +
-      '<p class="small muted">참여율 = 실제 수행 A ÷ 평가대상 D(배정 − 승인 제외). 동행 ' + TIERS[2][2] + '% · 자람 ' + TIERS[1][2] + '% · 결실 ' + TIERS[0][2] + '% 이상, D가 ' + MIN_SAMPLE + '회 미만이면 감사 카드를 제안합니다. 제안은 참고이며 수여는 관리자가 정합니다.' +
+      '<p class="small muted">참여율 = 실제 수행 A ÷ 약속한 일정 D(배정 − 승인 제외). 동행 ' + TIERS[2][2] + '% · 자람 ' + TIERS[1][2] + '% · 결실 ' + TIERS[0][2] + '% 이상, D가 ' + MIN_SAMPLE + '회 미만이면 감사 카드를 제안합니다(미리 고르지는 않습니다). 제안은 참고이며 수여는 관리자가 정합니다.' +
       (ended ? '' : '<br><b style="color:var(--bad)">아직 분기가 끝나지 않았습니다. 오늘까지의 기록으로 계산합니다.</b>') + '</p>' +
       (ids.length ? '<div class="tbl-wrap"><table class="rank"><thead><tr><th class="l">이름</th><th>배정</th><th>제외</th><th>D</th><th>A</th><th>참여율</th><th class="l">수여</th></tr></thead><tbody>' +
         ids.map(function (id) {
-          var o = ev[id] || { assigned: 0, excused: 0, d: 0, a: 0, rate: 0, tier: '' }, cur = S.badges[id] && S.badges[id][key], val = cur ? cur.code : o.tier;
+          var o = ev[id] || { assigned: 0, excused: 0, d: 0, a: 0, rate: 0, tier: '' }, cur = S.badges[id] && S.badges[id][key], val = cur ? cur.code : (o.tier === 'CARD' ? '' : o.tier);
           return '<tr><td class="l">' + esc(nameOf(id)) + (cur ? ' <span class="badge title">수여됨</span>' : '') + '</td><td>' + o.assigned + '</td><td>' + o.excused + '</td><td>' + o.d + '</td><td>' + o.a + '</td>' +
             '<td>' + (o.d ? pct(o.rate) : '-') + '</td><td class="l"><select data-tier="' + id + '" style="width:auto;padding:3px 6px">' +
             [['', '수여 안 함'], ['CARD', '감사 카드'], ['BEGIN', '동행'], ['GROW', '자람'], ['BLOOM', '결실']].map(function (op) {
@@ -800,7 +817,7 @@
         return '<option value="' + op[0] + '"' + (op[0] === tierVal ? ' selected' : '') + '>' + op[1] + (o && op[0] === o.tier ? ' (제안)' : '') + '</option>';
       }).join('') + '</select>' : '') + '</div>' +
       '<div class="row" style="margin-top:10px;gap:12px;flex-wrap:nowrap"><span id="g1-prev"></span><div class="small">' +
-      (isQ ? '배정 ' + o.assigned + '회 · 승인 제외 ' + o.excused + '회 · 평가대상 D ' + o.d + '회 · 실제 수행 A ' + o.a + '회' + (o.d ? ' · 참여율 ' + pct(o.a / o.d) : '') +
+      (isQ ? '배정 ' + o.assigned + '회 · 승인 제외 ' + o.excused + '회 · 약속한 일정 D ' + o.d + '회 · 실제 수행 A ' + o.a + '회' + (o.d ? ' · 참여율 ' + pct(o.a / o.d) : '') +
         (o.d && o.d < MIN_SAMPLE ? '<br>D가 ' + MIN_SAMPLE + '회 미만이라 운영안은 감사 카드를 권합니다.' : '')
         : y + '년 실제 섬김 ' + yr.a + '회') +
       (cur ? '<br><b style="color:var(--gold-d)">이미 수여됨: ' + esc(badgeInfo(key, cur).title) + '</b>' : '') + '</div></div>' +
@@ -824,6 +841,34 @@
       if (!confirm(nameOf(id) + ' 님의 ' + badgeInfo(key, cur).title + ' 수여를 취소할까요?')) return;
       db.ref(R + 'badges/' + id + '/' + key).remove().then(function () { closeModal(); toast('수여를 취소했습니다.'); }).catch(fail);
     };
+  }
+
+  function badgeClick(act, id) {
+    var p = id.split('|'), mid = p[0], key = p[1], y = key.slice(0, 4), kind = key.slice(5);
+    if (act === 'slot') { if (S.admin) grantOneModal(mid, y, kind); return; }
+    if (act === 'badge' && S.admin) { grantOneModal(mid, y, kind); return; }
+    badgeMeaning(mid, key);
+  }
+  function badgeMeaning(mid, key) {
+    var rec = (visibleBadges(mid) || {})[key];
+    if (!rec) return;
+    var bi = badgeInfo(key, rec), kind = key.slice(5), h = '';
+    if (kind.charAt(0) === 'Q') {
+      var mq = MEANING[+kind.slice(1)];
+      if (rec.code !== 'CARD' && mq) h += '<p><b>' + mq[0] + '</b> <span class="muted small">' + mq[1] + '</span><br>' + mq[2] + '</p>';
+      h += '<p>' + (TIER_DESC[rec.code] || '') + '</p>';
+    } else if (kind === 'YEAR') {
+      h += '<p>네 분기 배지를 모두 받고 한 해 동안 약속한 일정의 ' + YEAR_RATE + '% 이상을 함께했습니다.</p><p class="small muted">고린도전서 9:25에서 디자인 영감을 얻었습니다. 교회의 감사 표시를 성경이 말하는 상급과 같게 여기지 않습니다.</p>';
+    } else {
+      h += '<p>그해 실제로 섬긴 예배가 ' + kind.slice(1).replace(/^0+/, '') + '회가 되었습니다.</p><p class="small muted">숫자는 마가복음 4:8의 30배 · 60배 · 100배 결실에서 영감을 얻었습니다. 섬김 횟수에 대한 명령은 아닙니다.</p>';
+    }
+    modal('<div class="meaning"><span class="mbig">' + badgeImg(key, rec, 120) + '</span><h3>' + esc(bi.title) + '</h3><div class="muted">' + esc(bi.sub) + '</div></div>' + h +
+      '<p class="small"><b>' + esc(nameOf(mid)) + '</b> 님' + (rec.at ? ' · ' + fullDate(dateKeyOf(rec.at)) + ' 수여' : '') + '</p>' +
+      (rec.note ? '<div class="msg small">' + esc(rec.note) + '</div>' : '') +
+      '<p class="small muted" style="margin-top:12px">배지는 신앙의 수준을 판정하는 표지가 아니라, 함께한 걸음을 기억하고 감사하는 표시입니다. <a href="guide.html#badges">배지 안내 보기</a></p>' +
+      '<div class="foot">' + (S.admin ? '<button class="btn" id="bm-edit">수정 · 취소</button>' : '') + '<button class="btn pri" id="bm-close">닫기</button></div>');
+    $('bm-close').onclick = function () { closeModal(); };
+    if (S.admin) $('bm-edit').onclick = function () { grantOneModal(mid, key.slice(0, 4), kind); };
   }
 
   // 관리자: 누적 30·60·100회와 연말 완주 배지
@@ -1061,7 +1106,7 @@
       return '<label><input type="checkbox" data-' + kind + '="' + mid + '"' + (on ? ' checked' : '') + '> ' + esc(nameOf(mid)) + '</label>';
     }
     modal('<h3>출석 체크</h3><p class="small muted">' + shortDate(e.date) + ' ' + esc(e.title || '') +
-      '<br>담당자는 섬김으로 자동 기록됩니다. 오지 못했으면 "불참", 병가·돌봄·공식 사역처럼 미리 또는 나중에 승인된 사유면 "승인 제외"를 고릅니다. 승인 제외는 배지 평가 대상 일정(D)에서 빠지고, 사유는 기록하지 않습니다.</p>' +
+      '<br>담당자는 섬김으로 자동 기록됩니다. 오지 못했으면 "불참", 병가·돌봄·공식 사역처럼 미리 또는 나중에 승인된 사유면 "승인 제외"를 고릅니다. 승인 제외는 배지의 약속한 일정(D)에서 빠지고, 사유는 기록하지 않습니다.</p>' +
       (served.length ? '<label class="f">담당자</label><div class="att-list">' + served.map(function (mid) {
         var v = excused[mid] ? 'ex' : absent[mid] ? 'ab' : '';
         return '<div class="row small"><span class="grow">' + esc(nameOf(mid)) + ' <span class="muted">' + rolesIn(e, mid).join('·') + '</span></span>' +
@@ -1069,7 +1114,7 @@
           '<option value=""' + (v === '' ? ' selected' : '') + '>섬김</option><option value="ab"' + (v === 'ab' ? ' selected' : '') + '>불참</option>' +
           '<option value="ex"' + (v === 'ex' ? ' selected' : '') + '>승인 제외</option></select></div>';
       }).join('') + '</div>' : '') +
-      '<p class="small muted" style="margin:6px 0 0">담당 없이 출석한 기록은 결산 횟수에는 들어가지만 배지 평가(실제 수행)에는 들어가지 않습니다.</p>' +
+      '<p class="small muted" style="margin:6px 0 0">담당 없이 출석한 기록은 결산 횟수에는 들어가지만 배지의 실제 수행에는 들어가지 않습니다.</p>' +
       '<label class="f">출석 <a href="#" id="a-all" class="small" style="font-weight:500">활동 인원 모두 체크</a></label><div class="checks">' + others.map(function (m) { return cb('at', m.id, attend[m.id]); }).join('') + '</div>' +
       '<div class="foot"><button class="btn" id="a-close">닫기</button><button class="btn pri" id="a-save">저장</button></div>');
     $('a-all').onclick = function (ev) {
@@ -1264,8 +1309,10 @@
   // ---------- 동작 연결 ----------
   document.addEventListener('click', function (ev) {
     var b = ev.target.closest('[data-act]');
-    if (!b || !$('main').contains(b)) return;
+    if (!b) return;
     var act = b.getAttribute('data-act'), id = b.getAttribute('data-id');
+    if (/^(badge|slot|meaning)$/.test(act)) { badgeClick(act, id); return; }
+    if (!$('main').contains(b)) return;
     if (act === 'm-prev') { S.month = addMonth(S.month, -1); render(true); }
     else if (act === 'm-next') { S.month = addMonth(S.month, 1); render(true); }
     else if (act === 'm-now') { S.month = todayKey().slice(0, 7); render(true); }
