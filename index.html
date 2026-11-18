@@ -325,6 +325,13 @@
   .att-chip { border: 1px solid var(--line); background: #fff; border-radius: 20px; padding: 6px 12px; font: inherit; font-size: 14px; color: var(--text); cursor: pointer; }
   .att-chip.on { background: var(--navy); border-color: var(--navy); color: #fff; font-weight: 700; }
 
+  /* 관리 탭 기준 칸 */
+  .set-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 10px; align-items: end; }
+  .set-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .set-grid label.f { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .set-lb { display: block; font-size: 12.5px; color: var(--muted); font-weight: 700; margin-bottom: 4px; white-space: nowrap; }
+  .set-grid input { min-width: 0; }
+
   /* 모달 */
   .modal-bg { position: fixed; inset: 0; background: rgba(12,29,48,0.5); z-index: 50; display: flex; align-items: flex-start; justify-content: center; padding: 30px 12px; overflow-y: auto; }
   .modal { background: var(--card); border-radius: 16px; width: 100%; max-width: 520px; padding: 18px; }
@@ -374,6 +381,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="praise.js?v=32"></script>
+<script src="praise.js?v=33"></script>
 </body>
 </html>

@@ -1110,11 +1110,12 @@
     var c = cfg();
     var h = '<div class="card"><b>포인트 · 시간 기준</b>' +
       '<p class="small muted" style="margin:4px 0 0">바꾸면 지난 기록까지 새 기준으로 다시 계산됩니다. 섬김 시간은 예배마다 따로 적을 수도 있고, 비워 두면 아래 종류별 기본값을 씁니다.</p>' +
-      '<div class="row"><div class="grow"><label class="f">포인트 계산 시작일</label><input type="date" id="s-start" value="' + c.pointStart + '"></div>' +
-      '<div class="grow"><label class="f">담당 섬김 1회</label><input type="number" id="s-serve" min="0" step="0.5" value="' + c.servePoint + '"></div>' +
-      '<div class="grow"><label class="f">출석 1회</label><input type="number" id="s-attend" min="0" step="0.5" value="' + c.attendPoint + '"></div></div>' +
-      '<label class="f">종류별 기본 섬김 시간(분)</label><div class="row">' + Object.keys(TYPES).map(function (k) {
-        return '<div style="width:110px"><span class="small muted">' + TYPES[k] + '</span><input type="number" min="0" data-min="' + k + '" value="' + c.minutes[k] + '"></div>';
+      // 좁은 화면에서도 칸 높이가 어긋나지 않게: 시작일은 한 줄, 점수 두 칸은 나란히, 시간은 고른 격자
+      '<label class="f">포인트 계산 시작일</label><input type="date" id="s-start" value="' + c.pointStart + '">' +
+      '<div class="set-grid two"><div><label class="f">담당 섬김 1회 (점)</label><input type="number" id="s-serve" min="0" step="0.5" inputmode="decimal" value="' + c.servePoint + '"></div>' +
+      '<div><label class="f">출석 1회 (점)</label><input type="number" id="s-attend" min="0" step="0.5" inputmode="decimal" value="' + c.attendPoint + '"></div></div>' +
+      '<label class="f">종류별 기본 섬김 시간(분)</label><div class="set-grid">' + Object.keys(TYPES).map(function (k) {
+        return '<div><span class="set-lb">' + TYPES[k] + '</span><input type="number" min="0" inputmode="numeric" data-min="' + k + '" value="' + c.minutes[k] + '"></div>';
       }).join('') + '</div>' +
       '<div class="foot" style="justify-content:flex-start"><button class="btn pri" data-act="s-save">기준 저장</button></div></div>';
 
