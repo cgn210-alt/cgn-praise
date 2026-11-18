@@ -464,8 +464,13 @@
     var me = myId(), today = todayKey(), ym = S.month;
     var list = Object.keys(S.events).map(function (k) { return Object.assign({ id: k }, S.events[k]); })
       .filter(function (e) { return e.date && e.date.slice(0, 7) === ym; })
-      // 최근 날짜가 위로
-      .sort(function (a, b) { return a.date > b.date ? -1 : a.date < b.date ? 1 : (a.id < b.id ? -1 : 1); });
+      // 오늘 이후 예배는 가까운 날부터 위에, 지난 예배는 그 아래 최근 것부터
+      .sort(function (a, b) {
+        var fa = a.date >= today, fb = b.date >= today;
+        if (fa !== fb) return fa ? -1 : 1;
+        if (a.date !== b.date) return (a.date < b.date ? -1 : 1) * (fa ? 1 : -1);
+        return a.id < b.id ? -1 : 1;
+      });
     var h = '';
     if (S.notice || S.admin) {
       h += '<div class="notice">' + (S.notice ? esc(S.notice) : '<span class="muted">공지가 없습니다.</span>') +
@@ -476,7 +481,11 @@
       (ym !== today.slice(0, 7) ? '<button class="btn sm" data-act="m-now">이번 달</button>' : '') +
       '<span class="grow"></span>' + (S.admin ? '<button class="btn pri" data-act="ev-new">+ 예배 추가</button>' : '') + '</div>';
     if (!list.length) h += '<div class="card muted">이 달에 등록된 예배가 없습니다.</div>';
-    list.forEach(function (e) { h += eventCard(e, me, today); });
+    var hasUp = list.some(function (e) { return e.date >= today; }), sep = false;
+    list.forEach(function (e) {
+      if (hasUp && !sep && e.date < today) { h += '<div class="past-sep">지난 예배</div>'; sep = true; }
+      h += eventCard(e, me, today);
+    });
     return h;
   }
   function eventCard(e, me, today) {

@@ -113,6 +113,8 @@
   /* 예배 카드 */
   .ev { display: flex; gap: 12px; }
   .ev.past { opacity: 0.78; }
+  .past-sep { display: flex; align-items: center; gap: 10px; margin: 18px 0 10px; font-size: 13px; font-weight: 700; color: var(--muted); }
+  .past-sep:before, .past-sep:after { content: ''; flex: 1; height: 1px; background: var(--line); }
   .ev.today { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(200,155,85,0.25); }
   .ev .date { flex: none; width: 54px; text-align: center; border-radius: 12px; background: var(--gold-l); padding: 6px 0; align-self: flex-start; }
   .ev .date b { display: block; font-size: 20px; line-height: 1.1; color: var(--navy); }
@@ -249,6 +251,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="praise.js?v=16"></script>
+<script src="praise.js?v=17"></script>
 </body>
 </html>
