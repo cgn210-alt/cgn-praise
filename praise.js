@@ -1437,39 +1437,70 @@
   }
 
   function editAttend(id) {
-    var e = S.events[id], attend = Object.assign({}, e.attend || {}), absent = Object.assign({}, e.absent || {}), excused = Object.assign({}, e.excused || {});
+    var e = S.events[id], st = {}, att = Object.assign({}, e.attend || {});
     var served = slotIds(e);
-    var others = byPartName(sortedMembers()).filter(function (m) { return served.indexOf(m.id) < 0 && (m.status !== 'retired' || attend[m.id]); });
-    function cb(kind, mid, on) {
-      return '<label><input type="checkbox" data-' + kind + '="' + mid + '"' + (on ? ' checked' : '') + '> ' + esc(nameOf(mid)) + '</label>';
+    served.forEach(function (mid) { st[mid] = e.excused && e.excused[mid] ? 'ex' : e.absent && e.absent[mid] ? 'ab' : ''; });
+    var others = byPartName(sortedMembers()).filter(function (m) { return served.indexOf(m.id) < 0 && (m.status !== 'retired' || att[m.id]); });
+    var lastPart = null;
+    function partHead(m) {
+      var pk = partOf(m.part).key;
+      if (pk === lastPart) return '';
+      lastPart = pk;
+      return '<div class="att-part">' + partOf(pk).label + '</div>';
     }
-    modal('<h3>출석 체크</h3><p class="small muted">' + shortDate(e.date) + ' ' + esc(e.title || '') +
-      '<br>담당자는 섬김으로 자동 기록됩니다. 오지 못했으면 "불참", 병가·돌봄·공식 사역처럼 미리 또는 나중에 승인된 사유면 "승인 제외"를 고릅니다. 승인 제외는 배지의 약속한 일정(D)에서 빠지고, 사유는 기록하지 않습니다.</p>' +
-      (served.length ? '<label class="f">담당자</label><div class="att-list">' + served.map(function (mid) {
-        var v = excused[mid] ? 'ex' : absent[mid] ? 'ab' : '';
-        return '<div class="row small"><span class="grow">' + esc(nameOf(mid)) + ' <span class="muted">' + rolesIn(e, mid).join('·') + '</span></span>' +
-          '<select data-st="' + mid + '" style="width:auto;padding:4px 8px">' +
-          '<option value=""' + (v === '' ? ' selected' : '') + '>섬김</option><option value="ab"' + (v === 'ab' ? ' selected' : '') + '>불참</option>' +
-          '<option value="ex"' + (v === 'ex' ? ' selected' : '') + '>승인 제외</option></select></div>';
+    // 휴대폰에서는 화면 전체를 쓰는 창: 위(예배) · 가운데(담당자 · 출석) · 아래(요약 · 저장)를 고정
+    modal('<div class="fs-head"><div class="row" style="flex-wrap:nowrap"><div class="grow" style="min-width:0"><h3 style="margin:0">출석 체크</h3>' +
+      '<div class="small muted">' + fullDate(e.date) + ' · ' + esc(e.title || TYPES[e.type] || '') + '</div></div><button class="fs-x" id="a-x" aria-label="닫기">✕</button></div></div>' +
+      '<div class="fs-body">' +
+      '<details class="q-rule"><summary>기록 기준 보기</summary>담당자는 섬김으로 자동 기록됩니다. 오지 못했으면 "불참", 병가 · 돌봄 · 공식 사역처럼 미리 또는 나중에 승인된 사유면 "제외"(승인 제외)를 고릅니다. 승인 제외는 배지의 약속한 일정(D)에서 빠지고, 사유는 기록하지 않습니다. 담당 없이 출석한 기록은 결산 횟수에는 들어가지만 배지의 실제 수행에는 들어가지 않습니다.</details>' +
+      (served.length ? '<div class="ev-sec">담당자</div><div class="ev-slots">' + served.map(function (mid) {
+        return '<div class="att-row"><div class="att-who">' + avatar(mid, 26) + '<div style="min-width:0"><b>' + esc(nameOf(mid)) + '</b><div class="small muted">' + rolesIn(e, mid).join(' · ') + '</div></div></div>' +
+          '<div class="seg att-seg" data-st-of="' + mid + '">' + [['', '섬김'], ['ab', '불참'], ['ex', '제외']].map(function (o) {
+            return '<button type="button" data-v="' + o[0] + '" class="' + (st[mid] === o[0] ? 'on' : '') + '">' + o[1] + '</button>';
+          }).join('') + '</div></div>';
       }).join('') + '</div>' : '') +
-      '<p class="small muted" style="margin:6px 0 0">담당 없이 출석한 기록은 결산 횟수에는 들어가지만 배지의 실제 수행에는 들어가지 않습니다.</p>' +
-      '<label class="f">출석 <a href="#" id="a-all" class="small" style="font-weight:500">활동 인원 모두 체크</a></label><div class="checks">' + others.map(function (m) { return cb('at', m.id, attend[m.id]); }).join('') + '</div>' +
-      '<div class="foot"><button class="btn" id="a-close">닫기</button><button class="btn pri" id="a-save">저장</button></div>');
-    $('a-all').onclick = function (ev) {
-      ev.preventDefault();
-      document.querySelectorAll('#modal [data-at]').forEach(function (x) {
-        var m = S.members[x.getAttribute('data-at')];
-        if (m && (m.status || 'active') === 'active') x.checked = true;
-      });
+      '<div class="row" style="margin:16px 0 6px;flex-wrap:nowrap"><div class="ev-sec grow" style="margin:0">담당 없이 함께한 팀원</div><button type="button" class="btn sm" id="a-all">활동 인원 모두</button></div>' +
+      '<div class="att-pick">' + others.map(function (m) {
+        return partHead(m) + '<button type="button" class="att-chip' + (att[m.id] ? ' on' : '') + '" data-at="' + m.id + '">' + esc(m.name) + '</button>';
+      }).join('') + '</div></div>' +
+      '<div class="fs-foot"><div class="row" style="flex-wrap:nowrap"><span class="small grow" id="a-sum"></span><button class="btn" id="a-close">닫기</button><button class="btn pri" id="a-save">저장</button></div></div>',
+      'modal', 'full');
+    function sum() {
+      var n = { '': 0, ab: 0, ex: 0 }, a = 0;
+      served.forEach(function (mid) { n[st[mid]]++; });
+      Object.keys(att).forEach(function (k) { if (att[k]) a++; });
+      $('a-sum').innerHTML = '섬김 <b>' + n[''] + '</b> · 불참 <b>' + n.ab + '</b> · 제외 <b>' + n.ex + '</b> · 출석 <b>' + a + '</b>';
+    }
+    sum();
+    document.querySelectorAll('#modal .att-seg').forEach(function (g) {
+      g.onclick = function (ev) {
+        var b = ev.target.closest('[data-v]');
+        if (!b) return;
+        st[g.getAttribute('data-st-of')] = b.getAttribute('data-v');
+        g.querySelectorAll('[data-v]').forEach(function (x) { x.classList.toggle('on', x === b); });
+        sum();
+      };
+    });
+    document.querySelector('#modal .att-pick').onclick = function (ev) {
+      var b = ev.target.closest('[data-at]');
+      if (!b) return;
+      var k = b.getAttribute('data-at');
+      att[k] = !att[k];
+      b.classList.toggle('on', att[k]);
+      sum();
     };
-    $('a-close').onclick = function () { closeModal(); };
+    $('a-all').onclick = function () {
+      document.querySelectorAll('#modal [data-at]').forEach(function (b) {
+        var m = S.members[b.getAttribute('data-at')];
+        if (m && (m.status || 'active') === 'active') { att[b.getAttribute('data-at')] = true; b.classList.add('on'); }
+      });
+      sum();
+    };
+    $('a-close').onclick = $('a-x').onclick = function () { closeModal(); };
     $('a-save').onclick = function () {
       var at = {}, ab = {}, ex = {};
-      document.querySelectorAll('#modal [data-at]').forEach(function (x) { if (x.checked) at[x.getAttribute('data-at')] = true; });
-      document.querySelectorAll('#modal [data-st]').forEach(function (x) {
-        if (x.value === 'ab') ab[x.getAttribute('data-st')] = true;
-        if (x.value === 'ex') ex[x.getAttribute('data-st')] = true;
-      });
+      Object.keys(att).forEach(function (k) { if (att[k]) at[k] = true; });
+      served.forEach(function (mid) { if (st[mid] === 'ab') ab[mid] = true; if (st[mid] === 'ex') ex[mid] = true; });
       db.ref(R + 'events/' + id).update({ attend: Object.keys(at).length ? at : null, absent: Object.keys(ab).length ? ab : null, excused: Object.keys(ex).length ? ex : null })
         .then(function () { closeModal(); toast('출석을 저장했습니다.'); }).catch(fail);
     };

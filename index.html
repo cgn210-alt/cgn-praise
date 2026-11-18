@@ -310,6 +310,21 @@
   .ev-slot .sel-btn { width: auto; min-height: 30px; padding: 4px 10px; font-size: 13px; border-style: dashed; color: var(--muted); border-radius: 20px; }
   .ev-slot .sel-btn:after { display: none; }
 
+  /* 출석 체크 창 */
+  .att-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px dashed var(--line); }
+  .att-row:last-child { border-bottom: 0; }
+  .att-who { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+  .att-who b { font-size: 14.5px; }
+  .att-seg { flex: none; }
+  .att-seg button { padding: 6px 10px; font-size: 13px; }
+  .att-seg button[data-v="ab"].on { background: var(--bad); }
+  .att-seg button[data-v="ex"].on { background: var(--gold-d); }
+  .att-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+  .att-part { flex-basis: 100%; font-size: 12.5px; font-weight: 700; color: #84591f; margin-top: 8px; }
+  .att-part:first-child { margin-top: 0; }
+  .att-chip { border: 1px solid var(--line); background: #fff; border-radius: 20px; padding: 6px 12px; font: inherit; font-size: 14px; color: var(--text); cursor: pointer; }
+  .att-chip.on { background: var(--navy); border-color: var(--navy); color: #fff; font-weight: 700; }
+
   /* 모달 */
   .modal-bg { position: fixed; inset: 0; background: rgba(12,29,48,0.5); z-index: 50; display: flex; align-items: flex-start; justify-content: center; padding: 30px 12px; overflow-y: auto; }
   .modal { background: var(--card); border-radius: 16px; width: 100%; max-width: 520px; padding: 18px; }
@@ -359,6 +374,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="praise.js?v=31"></script>
+<script src="praise.js?v=32"></script>
 </body>
 </html>
