@@ -52,12 +52,12 @@
   var TIERS = [['BLOOM', '결실', 95], ['GROW', '자람', 85], ['BEGIN', '동행', 70]];
   var TIER_LABEL = { BEGIN: '동행', GROW: '자람', BLOOM: '결실', CARD: '감사 카드' };
   var QBADGE = {
-    1: { BEGIN: ['AM1-Q1-BEGIN-seed.png', '씨앗'], GROW: ['AM1-Q1-GROW-sprout.png', '새싹'], BLOOM: ['AM1-Q1-BLOOM-tree.png', '나무'] },
-    2: { BEGIN: ['AM1-Q2-BEGIN-lamp.png', '작은 등불'], GROW: ['AM1-Q2-GROW-lamp.png', '풍성한 등불'], BLOOM: ['AM1-Q2-BLOOM-light.png', '빛을 퍼뜨리는 등불'] },
-    3: { BEGIN: ['AM1-Q3-BEGIN-leaf.png', '포도잎'], GROW: ['AM1-Q3-GROW-vine.png', '포도 가지'], BLOOM: ['AM1-Q3-BLOOM-grapes.png', '포도송이'] },
-    4: { BEGIN: ['AM1-Q4-BEGIN-wheat.png', '한 이삭'], GROW: ['AM1-Q4-GROW-sheaf.png', '곡식 단'], BLOOM: ['AM1-Q4-BLOOM-harvest.png', '추수 화환'] }
+    1: { BEGIN: ['EM1-Q1-BEGIN-seed.png', '씨앗'], GROW: ['EM1-Q1-GROW-sprout.png', '새싹'], BLOOM: ['EM1-Q1-BLOOM-tree.png', '나무'] },
+    2: { BEGIN: ['EM1-Q2-BEGIN-lamp.png', '작은 등불'], GROW: ['EM1-Q2-GROW-lamp.png', '풍성한 등불'], BLOOM: ['EM1-Q2-BLOOM-light.png', '빛을 퍼뜨리는 등불'] },
+    3: { BEGIN: ['EM1-Q3-BEGIN-leaf.png', '포도잎'], GROW: ['EM1-Q3-GROW-vine.png', '포도 가지'], BLOOM: ['EM1-Q3-BLOOM-grapes.png', '포도송이'] },
+    4: { BEGIN: ['EM1-Q4-BEGIN-wheat.png', '한 이삭'], GROW: ['EM1-Q4-GROW-sheaf.png', '곡식 단'], BLOOM: ['EM1-Q4-BLOOM-harvest.png', '추수 화환'] }
   };
-  var MILES = [['M030', 30, 'AM1-MILESTONE-030.png'], ['M060', 60, 'AM1-MILESTONE-060.png'], ['M100', 100, 'AM1-MILESTONE-100.png']];
+  var MILES = [['M030', 30, 'EM1-MILESTONE-030.png'], ['M060', 60, 'EM1-MILESTONE-060.png'], ['M100', 100, 'EM1-MILESTONE-100.png']];
   var MIN_SAMPLE = 13;   // D 가 이보다 적으면 정규 배지 대신 시작·복귀 감사 카드
   var YEAR_RATE = 85;    // 연말 완주: 네 분기 배지 + 연간 85% 이상 + 모든 분기 70% 이상
   // 인쇄 양식 (print.html) 과 문서함 (docs 폴더)
@@ -256,7 +256,7 @@
       return { img: b ? 'badges/' + b[0] : '', title: y + '년 ' + q + '분기 ' + (TIER_LABEL[code] || ''), sub: b ? b[1] : '' };
     }
     for (var i = 0; i < MILES.length; i++) if (MILES[i][0] === part) return { img: 'badges/' + MILES[i][2], title: y + '년 누적 ' + MILES[i][1] + '회 기념', sub: '실제 섬김 ' + MILES[i][1] + '회' };
-    if (part === 'YEAR') return { img: 'badges/AM1-YEAR-TOGETHER.png', title: y + '년 한 해 함께 완주', sub: '네 분기 배지 · 연간 ' + YEAR_RATE + '% 이상' };
+    if (part === 'YEAR') return { img: 'badges/EM1-YEAR-TOGETHER.png', title: y + '년 한 해 함께 완주', sub: '네 분기 배지 · 연간 ' + YEAR_RATE + '% 이상' };
     return { img: '', title: key, sub: '' };
   }
   function badgeImg(key, rec, size) {
