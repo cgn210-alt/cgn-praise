@@ -27,6 +27,13 @@ jobs:
       - name: GitHub Pages 설정
         uses: actions/configure-pages@v5
 
+      # 앱 아래쪽에 보이는 '앱 업데이트' 날짜 (마지막으로 고친 커밋의 한국 시각)
+      - name: 업데이트 날짜 기록
+        run: |
+          D=$(TZ=Asia/Seoul git log -1 --format=%cd --date=format-local:'%Y-%m-%d %H:%M')
+          echo "{\"updated\":\"$D\",\"commit\":\"${GITHUB_SHA::7}\"}" > version.json
+          cat version.json
+
       - name: 파일 업로드
         uses: actions/upload-pages-artifact@v3
         with:

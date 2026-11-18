@@ -83,6 +83,8 @@
   .refs { font-size: 13.5px; color: var(--muted); }
   /* 아래쪽 저작권: 두 줄로 가운데 정렬, 단어 중간에서 끊지 않음 */
   .copyright { max-width: 860px; margin: 0 auto; padding: 8px 16px 36px; text-align: center; font-size: 11.5px; color: #8a8f9c; line-height: 1.65; word-break: keep-all; }
+  .copyright .app-ver { font-size: 11.5px; color: var(--gold-d, #a8793a); font-weight: 700; margin-bottom: 4px; }
+  .copyright .app-ver:empty { display: none; }
   .copyright .cr-line { width: 36px; height: 2px; border-radius: 2px; background: rgba(200,155,85,0.55); margin: 0 auto 10px; }
   .copyright b { display: block; font-size: 12px; font-weight: 700; color: #6f7787; letter-spacing: 0.02em; margin-bottom: 2px; }
   .copyright span { display: inline-block; }
@@ -279,6 +281,14 @@
     <p class="refs">디자인에 영감을 준 성경 본문: 고린도전서 4:2 · 마가복음 4:8, 4:26-29 · 마태복음 5:14-16 · 요한복음 15:5 · 시편 1:3, 126:5-6 · 고린도전서 9:25. 본문은 성경에서 직접 읽어 주세요.</p>
   </section>
 </main>
-<footer class="copyright"><div class="cr-line"></div><b>© 2026 EM1 · CGN 찬양팀</b><span>화면 구성 · 로고 · 배지 · 안내 및 인쇄 자료는</span><span>허락 없이 복제 · 배포 · 사용할 수 없습니다.</span></footer>
+<footer class="copyright"><div class="cr-line"></div><div class="app-ver" id="app-ver"></div><b>© 2026 EM1 · CGN 찬양팀</b><span>화면 구성 · 로고 · 배지 · 안내 및 인쇄 자료는</span><span>허락 없이 복제 · 배포 · 사용할 수 없습니다.</span></footer>
+<script>
+  // 배포할 때 자동으로 만들어지는 version.json 의 날짜를 아래쪽에 표시
+  fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (v) {
+    if (!v || !/^\d{4}-\d{2}-\d{2}/.test(v.updated || '')) return;
+    var d = v.updated;
+    document.getElementById('app-ver').textContent = 'EM1 앱 업데이트 ' + d.slice(0, 4) + '. ' + (+d.slice(5, 7)) + '. ' + (+d.slice(8, 10)) + (d.length > 10 ? ' ' + d.slice(11, 16) : '');
+  }).catch(function () {});
+</script>
 </body>
 </html>
