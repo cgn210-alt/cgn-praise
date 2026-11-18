@@ -305,15 +305,61 @@
       $('main').innerHTML = '<div class="card">Firebase 설정 전입니다. README 의 "처음 설정"을 따라 firebase-config.js 를 채워 주세요.</div>';
       return;
     }
+    // 빠른 시작: 마지막으로 본 자료가 있으면 로그인 확인을 기다리지 않고 바로 화면을 그림
+    var cached = loadCache();
+    if (cached) {
+      CACHE_KEYS.forEach(function (k) { S[k] = cached[k] || {}; });
+      S.photos = cached.photos || {};
+      S.notice = cached.notice || '';
+      S.user = cached.user;
+      setupUI();
+      applyRole();
+      render(true);
+    }
     firebase.initializeApp(FIREBASE_CONFIG);
     auth = firebase.auth();
     db = firebase.database();
     auth.onAuthStateChanged(function (u) {
+      // 저장해 둔 화면과 실제 로그인이 다르면 깨끗하게 다시 시작
+      if (cached && (!u || u.uid !== cached.user.uid || !u.emailVerified)) { clearCache(); location.reload(); return; }
       S.user = u;
       if (!u) return showLogin('login');
       if (!u.emailVerified) return showVerify();
       boot();
     });
+  }
+
+  // ---------- 빠른 시작용 기기 저장 (로그아웃하면 지움) ----------
+  var CACHE_KEY = 'em1-cache', PHOTO_KEY = 'em1-cache-photos';
+  var CACHE_KEYS = ['members', 'events', 'awards', 'users', 'admins', 'settings', 'badges', 'cheers', 'issues'];
+  function loadCache() {
+    try {
+      var c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+      if (!c || !c.user || !c.user.uid) return null;
+      try { c.photos = JSON.parse(localStorage.getItem(PHOTO_KEY) || '{}'); } catch (e) { c.photos = {}; }
+      return c;
+    } catch (e) { return null; }
+  }
+  var saveTimer;
+  function saveCache() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () {
+      try {
+        var u = S.user, d = { user: { uid: u.uid, email: u.email, displayName: u.displayName || '' }, at: Date.now(), notice: S.notice };
+        CACHE_KEYS.forEach(function (k) { d[k] = S[k]; });
+        localStorage.setItem(CACHE_KEY, JSON.stringify(d));
+        // 사진은 크기가 커서 따로 (저장 공간이 모자라면 사진만 빼고 저장)
+        try { localStorage.setItem(PHOTO_KEY, JSON.stringify(S.photos)); } catch (e) { try { localStorage.removeItem(PHOTO_KEY); } catch (e2) {} }
+      } catch (e) {}
+    }, 1500);
+  }
+  function clearCache() { try { localStorage.removeItem(CACHE_KEY); localStorage.removeItem(PHOTO_KEY); } catch (e) {} }
+  function applyRole() {
+    var a = S.user && S.admins[S.user.uid];
+    S.role = S.master ? 'master' : a ? (a.role === 'team' ? 'team' : 'ops') : null;
+    S.admin = !!S.role;                                  // 예배 담당 · 출석 · 공지
+    S.ops = S.role === 'master' || S.role === 'ops';     // 관리 탭과 그 밖의 편집
+    if ($('who-role')) $('who-role').textContent = S.role ? ROLES[S.role][0] : '';
   }
 
   function hideApp() {
@@ -390,11 +436,11 @@
     $('v-again').onclick = function () {
       u.sendEmailVerification().then(function () { toast('인증 메일을 다시 보냈습니다.'); }).catch(function (e) { $('v-err').textContent = authError(e); });
     };
-    $('v-out').onclick = function () { auth.signOut(); };
+    $('v-out').onclick = function () { clearCache(); auth.signOut(); };
   }
 
   // ---------- 시작 ----------
-  var booted = false;
+  var booted = false, listening = false;
   function boot() {
     var u = S.user, email = (u.email || '').toLowerCase();
     if (email.slice(-ALLOWED_EMAIL_DOMAIN.length) !== ALLOWED_EMAIL_DOMAIN) {
@@ -402,12 +448,29 @@
       $('x-out').onclick = function () { auth.signOut(); };
       return;
     }
-    S.master = email === MASTER_EMAIL.toLowerCase();
+    setupUI();
     db.ref(R + 'users/' + u.uid).set({ email: email, name: u.displayName || '', at: Date.now() }).catch(function () {});
+    if (listening) return;
+    listening = true;
+    ['members', 'events', 'photos', 'awards', 'users', 'admins', 'settings', 'badges', 'cheers', 'issues'].forEach(function (k) {
+      db.ref(R + k).on('value', function (snap) {
+        S[k] = snap.val() || {};
+        if (k === 'admins') applyRole();
+        later();
+        saveCache();
+      }, denied);
+    });
+    db.ref(R + 'notice').on('value', function (snap) { S.notice = snap.val() || ''; later(); saveCache(); }, denied);
+  }
+  // 위쪽 이름 · 탭 · 뒤로가기 준비 (저장해 둔 자료로 먼저 그릴 때도 씀)
+  function setupUI() {
+    var u = S.user, email = (u.email || '').toLowerCase();
+    S.master = email === MASTER_EMAIL.toLowerCase();
     $('who').innerHTML = esc(u.displayName || email) + ' <span class="role" id="who-role"></span><br><button id="logout">로그아웃</button>';
     $('who').classList.remove('hidden');
-    $('logout').onclick = function () { auth.signOut(); location.reload(); };
+    $('logout').onclick = function () { clearCache(); if (auth) auth.signOut(); location.reload(); };
     $('tabs').classList.remove('hidden');
+    applyRole();
     if (booted) return;
     booted = true;
 
@@ -438,20 +501,6 @@
     });
 
     S.bYear = t.slice(0, 4);
-    ['members', 'events', 'photos', 'awards', 'users', 'admins', 'settings', 'badges', 'cheers', 'issues'].forEach(function (k) {
-      db.ref(R + k).on('value', function (snap) {
-        S[k] = snap.val() || {};
-        if (k === 'admins') {
-          var a = S.admins[u.uid];
-          S.role = S.master ? 'master' : a ? (a.role === 'team' ? 'team' : 'ops') : null;
-          S.admin = !!S.role;                        // 예배 담당 · 출석 · 공지
-          S.ops = S.role === 'master' || S.role === 'ops';   // 관리 탭과 그 밖의 편집
-          $('who-role').textContent = S.role ? ROLES[S.role][0] : '';
-        }
-        later();
-      }, denied);
-    });
-    db.ref(R + 'notice').on('value', function (snap) { S.notice = snap.val() || ''; later(); }, denied);
   }
   function denied(e) {
     $('main').innerHTML = '<div class="card">자료를 읽을 수 없습니다. (' + esc(e && e.message) + ')<br>로그아웃 후 다시 로그인해 보시고, 계속되면 관리자에게 알려 주세요.</div>';
