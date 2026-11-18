@@ -3,7 +3,7 @@
   // 명단 파트 (slot = 예배 담당표에서 들어가는 자리)
   var PARTS = [
     { key: 'lead', label: '인도자', slot: 'lead' },
-    { key: 'keys', label: '피아노', slot: 'keys' },
+    { key: 'keys', label: '건반', slot: 'keys' },
     { key: 'bass', label: '베이스', slot: 'bass' },
     { key: 'drum', label: '드럼', slot: 'drum' },
     { key: 'mvocal', label: '남자싱어', slot: 'vocal' },
@@ -1369,23 +1369,27 @@
     var e = src ? JSON.parse(JSON.stringify(src)) : { date: S.month === today.slice(0, 7) ? today : S.month + '-01', title: '직원예배', type: 'staff' };
     var slots = {};
     SLOTS.forEach(function (s) { slots[s[0]] = arr(e.slots && e.slots[s[0]]); });
-    modal('<h3>' + (id ? '예배 편집' : '예배 추가') + '</h3>' +
-      '<div class="row"><div class="grow"><label class="f">날짜</label><input type="date" id="e-date" value="' + e.date + '"></div>' +
+    // 휴대폰에서는 화면 전체를 쓰는 창: 위(제목 · 닫기) · 가운데(내용) · 아래(삭제 · 저장)를 고정
+    modal('<div class="fs-head"><div class="row" style="flex-wrap:nowrap"><h3 style="margin:0" class="grow">' + (id ? '예배 편집' : '예배 추가') + '</h3>' +
+      '<button class="fs-x" id="e-x" aria-label="닫기">✕</button></div></div><div class="fs-body">' +
+      '<div class="row" style="flex-wrap:nowrap"><div class="grow" style="min-width:0"><label class="f">날짜</label><input type="date" id="e-date" value="' + e.date + '"></div>' +
       '<div class="grow"><label class="f">종류</label><select id="e-type">' + Object.keys(TYPES).map(function (k) {
         return '<option value="' + k + '"' + (k === e.type ? ' selected' : '') + '>' + TYPES[k] + '</option>';
       }).join('') + '</select></div></div>' +
       '<label class="f">예배 이름</label><input type="text" id="e-title" value="' + esc(e.title || '') + '" placeholder="예: 직원예배, 기도회(○○○ 목사)">' +
-      '<label class="f">섬김 시간(분) <span id="e-min-hint" style="font-weight:500"></span></label><input type="number" id="e-min" min="0" value="' + (e.minutes || '') + '">' +
-      '<div id="e-slots"></div>' +
-      '<label class="f">메모</label><input type="text" id="e-note" value="' + esc(e.note || '') + '">' +
-      '<div class="foot">' + (id ? '<button class="btn bad" id="e-del">삭제</button><span class="grow"></span>' : '') +
-      '<button class="btn" id="e-close">닫기</button><button class="btn pri" id="e-save">저장</button></div>');
+      '<label class="f">섬김 시간(분) <span id="e-min-hint" style="font-weight:500"></span></label><input type="number" id="e-min" min="0" inputmode="numeric" value="' + (e.minutes || '') + '">' +
+      '<div class="ev-sec">담당자</div><div id="e-slots" class="ev-slots"></div>' +
+      '<label class="f">메모</label><input type="text" id="e-note" value="' + esc(e.note || '') + '"></div>' +
+      '<div class="fs-foot"><div class="row" style="flex-wrap:nowrap">' + (id ? '<button class="btn bad" id="e-del">삭제</button>' : '') + '<span class="grow"></span>' +
+      '<button class="btn" id="e-close">닫기</button><button class="btn pri" id="e-save">저장</button></div></div>', 'modal', 'full');
+    $('e-x').onclick = function () { closeModal(); };
     function hint() { $('e-min-hint').textContent = '비우면 ' + TYPES[$('e-type').value] + ' 기본 ' + c.minutes[$('e-type').value] + '분'; }
     function draw() {
+      // 자리마다 한 줄: 왼쪽 자리 이름, 오른쪽 담당자와 + 추가
       $('e-slots').innerHTML = SLOTS.map(function (s) {
-        return '<label class="f">' + s[1] + '</label><div class="chips">' + slots[s[0]].map(function (mid) {
+        return '<div class="ev-slot"><span class="ev-lb">' + s[1] + '</span><div class="chips">' + slots[s[0]].map(function (mid) {
           return '<span class="chip">' + avatar(mid, 22) + esc(nameOf(mid)) + ' <x data-rm="' + s[0] + '|' + mid + '">✕</x></span>';
-        }).join('') + '<select data-add="' + s[0] + '" style="width:auto;padding:3px 8px;font-size:13px">' + candidateOptions(s[0], slots[s[0]]) + '</select></div>';
+        }).join('') + '<select data-add="' + s[0] + '" class="ev-add">' + candidateOptions(s[0], slots[s[0]]) + '</select></div></div>';
       }).join('');
     }
     hint(); draw();

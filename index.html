@@ -298,6 +298,18 @@
   .cal-day.on { background: var(--navy); color: #fff; font-weight: 700; box-shadow: none; }
   .cal-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px 0; }
 
+  /* 예배 편집 창 */
+  .ev-sec { margin: 16px 0 4px; font-size: 13px; font-weight: 700; color: var(--muted); }
+  .ev-slots { border: 1px solid var(--line); border-radius: 12px; background: #fff; padding: 2px 12px; }
+  .ev-slot { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px dashed var(--line); }
+  .ev-slot:last-child { border-bottom: 0; }
+  .ev-lb { flex: none; width: 44px; padding-top: 5px; font-size: 13px; font-weight: 700; color: var(--navy2); }
+  .ev-slot .chips { flex: 1; min-width: 0; gap: 6px; }
+  .ev-slot .chip { padding: 3px 10px 3px 3px; font-size: 14px; }
+  .ev-slot .chip x { padding: 0 2px 0 4px; font-size: 13px; }
+  .ev-slot .sel-btn { width: auto; min-height: 30px; padding: 4px 10px; font-size: 13px; border-style: dashed; color: var(--muted); border-radius: 20px; }
+  .ev-slot .sel-btn:after { display: none; }
+
   /* 모달 */
   .modal-bg { position: fixed; inset: 0; background: rgba(12,29,48,0.5); z-index: 50; display: flex; align-items: flex-start; justify-content: center; padding: 30px 12px; overflow-y: auto; }
   .modal { background: var(--card); border-radius: 16px; width: 100%; max-width: 520px; padding: 18px; }
@@ -347,6 +359,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="praise.js?v=30"></script>
+<script src="praise.js?v=31"></script>
 </body>
 </html>
