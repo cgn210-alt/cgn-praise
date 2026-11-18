@@ -137,6 +137,13 @@
           ((a.order || 0) - (b.order || 0)) || (a.name < b.name ? -1 : 1);
       });
   }
+  // 파트 순서대로, 파트 안에서는 가나다순
+  function byPartName(list) {
+    var order = {}; PARTS.forEach(function (p, i) { order[p.key] = i; });
+    return list.sort(function (a, b) {
+      return (order[partOf(a.part).key] - order[partOf(b.part).key]) || a.name.localeCompare(b.name, 'ko');
+    });
+  }
   function myId() {
     var email = (S.user && S.user.email || '').toLowerCase();
     for (var k in S.members) if ((S.members[k].email || '').toLowerCase() === email) return k;
@@ -414,9 +421,19 @@
     $('tabs').addEventListener('click', function (ev) {
       var b = ev.target.closest('[data-tab]');
       if (!b) return;
-      S.tab = b.getAttribute('data-tab');
-      try { localStorage.setItem('praise-tab', S.tab); } catch (e) {}
-      render(true);
+      goTab(b.getAttribute('data-tab'));
+    });
+    // 휴대폰 뒤로가기: 열린 창이 있으면 닫고, 없으면 직전 탭으로
+    history.replaceState({ tab: S.tab }, '');
+    window.addEventListener('popstate', function (ev) {
+      if (skipPop) { skipPop = false; return; }
+      if ($('modal') || $('modal2')) { closeModal('modal2', true); closeModal('modal', true); return; }
+      var st = ev.state || {};
+      if (st.tab && st.tab !== S.tab) {
+        S.tab = st.tab;
+        try { localStorage.setItem('praise-tab', S.tab); } catch (e) {}
+        render(true);
+      }
     });
 
     S.bYear = t.slice(0, 4);
@@ -749,15 +766,22 @@
         (f.rec.note ? '<div class="msg small">' + esc(f.rec.note) + '</div>' : '') + cheerBlock(f.id, f.key) + '</div></div></div>';
     });
 
-    h += '<h2 class="sec">' + y + '년 배지 수집판 <span class="small muted" style="font-weight:500">파트 순서</span></h2><div class="board">';
-    sortedMembers().forEach(function (m) {
+    // 담당 파트별로 나누고, 파트 안에서는 가나다순
+    h += '<h2 class="sec board-title">' + y + '년 배지 수집판</h2>';
+    var shown = byPartName(sortedMembers()).filter(function (m) {
       var mine = Object.keys(visibleBadges(m.id)).filter(function (k) { return k.slice(0, 4) === y; });
-      if (!mine.length && (m.status || 'active') !== 'active') return;
-      if (m.hideBadges && !S.ops && m.id !== me) return;
-      h += '<div class="bcard' + (m.id === me ? ' me' : '') + '" data-act="mem" data-id="' + m.id + '"><div class="row" style="flex-wrap:nowrap;gap:8px">' + avatar(m.id, 30) +
-        '<b class="grow">' + esc(m.name) + '</b>' + (m.hideBadges ? '<span class="badge retired">비공개</span>' : '') + '</div>' + collection(m.id, y, 34) + '</div>';
+      if (!mine.length && (m.status || 'active') !== 'active') return false;
+      return !(m.hideBadges && !S.ops && m.id !== me);
     });
-    return h + '</div>';
+    PARTS.forEach(function (p) {
+      var ms = shown.filter(function (m) { return partOf(m.part).key === p.key; });
+      if (!ms.length) return;
+      h += '<h3 class="part">' + p.label + ' <span class="cnt">' + ms.length + '명</span></h3><div class="board">' + ms.map(function (m) {
+        return '<div class="bcard' + (m.id === me ? ' me' : '') + '" data-act="mem" data-id="' + m.id + '"><div class="row" style="flex-wrap:nowrap;gap:8px">' + avatar(m.id, 30) +
+          '<b class="grow">' + esc(m.name) + '</b>' + (m.hideBadges ? '<span class="badge retired">비공개</span>' : '') + '</div>' + collection(m.id, y, 34) + '</div>';
+      }).join('') + '</div>';
+    });
+    return h;
   }
 
   // 관리자: 분기 돌아보기와 배지 수여
@@ -816,12 +840,14 @@
 
   // 수여한 해의 배지 수집판으로 이동
   function showBoard(y) {
-    S.tab = 'badges'; S.bYear = String(y);
-    try { localStorage.setItem('praise-tab', S.tab); } catch (e) {}
-    render(true);
-    var b = document.querySelector('#main .board');
-    if (b) b.previousElementSibling.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    toast(y + '년 배지 수집판에 표시했습니다.');
+    S.bYear = String(y);
+    // 창을 닫으며 생긴 '뒤로' 처리가 끝난 뒤 탭을 옮깁니다
+    setTimeout(function () {
+      goTab('badges');
+      var b = document.querySelector('#main .board-title');
+      if (b) b.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      toast(y + '년 배지 수집판에 표시했습니다.');
+    }, 80);
   }
 
   // 관리자: 한 사람에게 배지 하나 주기 (명단에서 사람을 눌러 '배지 주기')
@@ -1027,9 +1053,21 @@
   }
 
   // ---------- 모달 ----------
+  // 탭 옮기기 (뒤로가기 기록을 남김)
+  var skipPop = false;
+  function goTab(tab) {
+    if (tab === S.tab) { render(true); return; }
+    S.tab = tab;
+    try { localStorage.setItem('praise-tab', S.tab); } catch (e) {}
+    history.pushState({ tab: tab }, '');
+    render(true);
+  }
+
   function modal(html, id) {
     id = id || 'modal';
-    closeModal(id);
+    // 처음 여는 창이면 뒤로가기로 닫을 수 있게 기록을 하나 남깁니다
+    if (!$('modal') && !$('modal2')) history.pushState({ tab: S.tab, modal: true }, '');
+    closeModal(id, true);
     var bg = document.createElement('div');
     bg.className = 'modal-bg'; bg.id = id;
     if (id === 'modal2') bg.style.zIndex = 60;
@@ -1037,7 +1075,13 @@
     document.body.appendChild(bg);
     return bg.firstChild;
   }
-  function closeModal(id) { var m = $(id || 'modal'); if (m) m.remove(); }
+  // silent: 창을 바꿔 끼우거나 뒤로가기로 닫을 때 (기록은 그대로)
+  function closeModal(id, silent) {
+    var m = $(id || 'modal');
+    if (!m) return;
+    m.remove();
+    if (!silent && !$('modal') && !$('modal2') && history.state && history.state.modal) { skipPop = true; history.back(); }
+  }
 
   function editNotice() {
     modal('<h3>공지 수정</h3><p class="small muted">예배 담당 화면 맨 위에 보입니다. 비우면 감춰집니다.</p><textarea id="n-text" style="min-height:120px">' + esc(S.notice) + '</textarea>' +
@@ -1048,14 +1092,20 @@
     };
   }
 
+  // 예배 담당 고르기: 이 자리의 파트를 맨 위에, 나머지는 파트별로. 파트 안에서는 가나다순
   function candidateOptions(slot, chosen) {
-    var list = sortedMembers().filter(function (m) { return m.status !== 'retired' && chosen.indexOf(m.id) < 0; });
-    var main = list.filter(function (m) { return partOf(m.part).slot === slot || (m.roles && m.roles[slot]); });
+    var list = byPartName(Object.keys(S.members).map(function (k) { return Object.assign({ id: k }, S.members[k]); }))
+      .filter(function (m) { return m.status !== 'retired' && chosen.indexOf(m.id) < 0; });
+    var main = list.filter(function (m) { return partOf(m.part).slot === slot || (m.roles && m.roles[slot]); })
+      .sort(function (a, b) { return a.name.localeCompare(b.name, 'ko'); });
     var rest = list.filter(function (m) { return main.indexOf(m) < 0; });
     function opt(m) { return '<option value="' + m.id + '">' + esc(m.name) + (m.status && m.status !== 'active' ? ' (' + STATUS[m.status] + ')' : '') + '</option>'; }
-    return '<option value="">+ 추가</option>' +
-      (main.length ? '<optgroup label="' + slotLabel(slot) + ' 파트">' + main.map(opt).join('') + '</optgroup>' : '') +
-      (rest.length ? '<optgroup label="그 밖의 인원">' + rest.map(opt).join('') + '</optgroup>' : '');
+    var h = '<option value="">+ 추가</option>' + (main.length ? '<optgroup label="' + slotLabel(slot) + ' 파트">' + main.map(opt).join('') + '</optgroup>' : '');
+    PARTS.forEach(function (p) {
+      var ms = rest.filter(function (m) { return partOf(m.part).key === p.key; });
+      if (ms.length) h += '<optgroup label="' + p.label + '">' + ms.map(opt).join('') + '</optgroup>';
+    });
+    return h;
   }
 
   function editEvent(id) {
@@ -1129,7 +1179,7 @@
   function editAttend(id) {
     var e = S.events[id], attend = Object.assign({}, e.attend || {}), absent = Object.assign({}, e.absent || {}), excused = Object.assign({}, e.excused || {});
     var served = slotIds(e);
-    var others = sortedMembers().filter(function (m) { return served.indexOf(m.id) < 0 && (m.status !== 'retired' || attend[m.id]); });
+    var others = byPartName(sortedMembers()).filter(function (m) { return served.indexOf(m.id) < 0 && (m.status !== 'retired' || attend[m.id]); });
     function cb(kind, mid, on) {
       return '<label><input type="checkbox" data-' + kind + '="' + mid + '"' + (on ? ' checked' : '') + '> ' + esc(nameOf(mid)) + '</label>';
     }
