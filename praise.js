@@ -1301,8 +1301,8 @@
     rd.readAsText(f, 'utf-8');
   }
 
-  // 명단 변경 파일: 이름으로 찾아 파트 · 상태 · 메모 · 순서만 바꾸고, 없는 이름은 새로 추가합니다.
-  // 사진 · 메일 · 직임 · 예배 기록은 건드리지 않습니다.
+  // 명단 변경 파일: 이름으로 찾아 파트 · 상태 · 메모 · 순서 · 메일(파일에 있을 때만)을 바꾸고, 없는 이름은 새로 추가합니다.
+  // 사진 · 직임 · 예배 기록은 건드리지 않습니다.
   function rosterChanges(data) {
     var byName = {}, up = {}, lines = [], orders = 0;
     Object.keys(S.members).forEach(function (k) { byName[S.members[k].name] = k; });
@@ -1317,25 +1317,26 @@
         if (!c.add) { lines.push(c.name + ': 명단에 없어 건너뜀'); return; }
         var obj = { name: c.name, part: c.part || '', status: c.status || 'active', order: c.order || 0 };
         if (c.note) obj.note = c.note;
+        if (c.email) obj.email = String(c.email).toLowerCase();
         up['members/' + db.ref(R + 'members').push().key] = obj;
         lines.push('새로 추가: ' + c.name + ' (' + partOf(c.part).label + ')');
         return;
       }
       var m = S.members[id], diffs = [];
-      ['part', 'status', 'note', 'order'].forEach(function (f) {
+      ['part', 'status', 'note', 'order', 'email'].forEach(function (f) {
         if (!(f in c)) return;
         var nv = c[f] == null || c[f] === '' ? null : c[f], ov = m[f] == null || m[f] === '' ? null : m[f];
         if (f === 'status' && !ov) ov = 'active';
         if (nv === ov) return;
         up['members/' + id + '/' + f] = nv;
         if (f === 'order') orders++;
-        else diffs.push((f === 'note' ? '메모 ' : '') + show(f, ov) + ' → ' + show(f, nv));
+        else diffs.push((f === 'note' ? '메모 ' : f === 'email' ? '메일 ' : '') + show(f, ov) + ' → ' + show(f, nv));
       });
       if (diffs.length) lines.push(c.name + ': ' + diffs.join(', '));
     });
     if (!Object.keys(up).length) { toast('이미 이 명단과 같습니다.'); return; }
     modal('<h3>명단 변경 적용</h3><p class="small muted">' + esc(data.source || '') + (data.date ? ' · ' + esc(data.date) : '') +
-      '<br>아래 내용만 바뀝니다. 사진 · 메일 · 직임 · 예배 기록은 그대로입니다.</p>' +
+      '<br>아래 내용만 바뀝니다. 사진 · 직임 · 예배 기록은 그대로입니다.</p>' +
       '<div class="att-list">' + lines.map(function (l) { return '<div class="row small">' + esc(l) + '</div>'; }).join('') + '</div>' +
       (orders ? '<p class="small muted">카드 순서 ' + orders + '명도 최종 명단 순서로 맞춥니다.</p>' : '') +
       '<div class="foot"><button class="btn" id="rc-close">닫기</button><button class="btn pri" id="rc-ok">적용</button></div>');
