@@ -800,8 +800,16 @@
     var key = y + '-Q' + q, ev = evalQuarter(y, q), rg = quarterRange(y, q), ended = rg.to < todayKey();
     var ids = Object.keys(ev);
     Object.keys(S.badges).forEach(function (id) { if (S.badges[id][key] && ids.indexOf(id) < 0) ids.push(id); });
-    var order = sortedMembers().map(function (m) { return m.id; });
+    // 파트별로, 파트 안에서는 가나다순
+    var order = byPartName(sortedMembers()).map(function (m) { return m.id; });
     ids.sort(function (a, b) { return order.indexOf(a) - order.indexOf(b); });
+    var lastPart = null;
+    function partRow(id) {
+      var pk = partOf((S.members[id] || {}).part).key;
+      if (pk === lastPart) return '';
+      lastPart = pk;
+      return '<tr class="grp"><td class="l" colspan="7">' + partOf(pk).label + '</td></tr>';
+    }
     modal('<h3>분기 돌아보기 · 배지 수여</h3>' +
       '<div class="row"><select id="eq-y" style="width:auto">' + yearChoices(y).map(function (v) { return '<option' + (v === y ? ' selected' : '') + '>' + v + '</option>'; }).join('') + '</select>' +
       '<select id="eq-q" style="width:auto">' + [1, 2, 3, 4].map(function (v) { return '<option value="' + v + '"' + (v === +q ? ' selected' : '') + '>' + v + '분기</option>'; }).join('') + '</select></div>' +
@@ -810,7 +818,7 @@
       (ids.length ? '<div class="tbl-wrap"><table class="rank"><thead><tr><th class="l">이름</th><th>배정</th><th>제외</th><th>D</th><th>A</th><th>참여율</th><th class="l">수여</th></tr></thead><tbody>' +
         ids.map(function (id) {
           var o = ev[id] || { assigned: 0, excused: 0, d: 0, a: 0, rate: 0, tier: '' }, cur = S.badges[id] && S.badges[id][key], val = cur ? cur.code : (o.tier === 'CARD' ? '' : o.tier);
-          return '<tr><td class="l">' + esc(nameOf(id)) + (cur ? ' <span class="badge title">수여됨</span>' : '') + '</td><td>' + o.assigned + '</td><td>' + o.excused + '</td><td>' + o.d + '</td><td>' + o.a + '</td>' +
+          return partRow(id) + '<tr><td class="l">' + esc(nameOf(id)) + (cur ? ' <span class="badge title">수여됨</span>' : '') + '</td><td>' + o.assigned + '</td><td>' + o.excused + '</td><td>' + o.d + '</td><td>' + o.a + '</td>' +
             '<td>' + (o.d ? pct(o.rate) : '-') + '</td><td class="l"><select data-tier="' + id + '" style="width:auto;padding:3px 6px">' +
             [['', '수여 안 함'], ['CARD', '감사 카드'], ['BEGIN', '동행'], ['GROW', '자람'], ['BLOOM', '결실']].map(function (op) {
               return '<option value="' + op[0] + '"' + (op[0] === val ? ' selected' : '') + '>' + op[1] + (op[0] && op[0] === o.tier ? ' (제안)' : '') + '</option>';
